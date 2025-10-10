@@ -325,8 +325,7 @@ class SpaceTempGoG_detr_dad(nn.Module):
     def __init__(self, input_dim=2048, embedding_dim=128, img_feat_dim=2048, num_classes=2):
         super(SpaceTempGoG_detr_dad, self).__init__()
 
-        self.num_heads = 1
-        self.num_layers = 1
+        self.num_heads = 4
         self.input_dim = input_dim
         self.embedding_dim = embedding_dim
 
@@ -375,8 +374,8 @@ class SpaceTempGoG_detr_dad(nn.Module):
             d_model=embedding_dim * 2, nhead=self.num_heads, batch_first=True
         )
 
-        self.temporal_transformer_img = TransformerEncoder(encoder_layer_img, num_layers=self.num_layers)
-        self.temporal_transformer_atten = TransformerEncoder(encoder_layer_atten, num_layers=self.num_layers)
+        self.temporal_transformer_img = TransformerEncoder(encoder_layer_img, num_layers=2)
+        self.temporal_transformer_atten = TransformerEncoder(encoder_layer_atten, num_layers=2)
 
         # -----------------------
         # LSTMs (num_layers=1, hidden_size = input_size)
