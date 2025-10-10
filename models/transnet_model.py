@@ -173,14 +173,14 @@ class SpaceTempGoG_detr_dad(nn.Module):
         # -----------------------
         img_feat_orig = self.img_fc(img_feat).unsqueeze(0)
         img_feat_orig = self.temporal_transformer(img_feat_orig).squeeze(0)
-        frame_embed_img = self.relu(self.gc2_norm2(self.gc2_i3d(img_feat_orig, video_adj_list)))
+        frame_embed_img = self.relu(self.gc2_norm2(self.gc2_i3d(img_feat_orig, video_adj_list.clone())))
 
         # -----------------------
         # Attention feature processing with TransformerConv
         # -----------------------
         atten_feat_fc = self.atten_fc(atten_feat).unsqueeze(0)
         atten_feat_trans = self.temporal_transformer_atten(atten_feat_fc).squeeze(0)
-        frame_embed_atten = self.relu(self.gc2_norm3(self.gc2_atten(atten_feat_trans, video_adj_list)))
+        frame_embed_atten = self.relu(self.gc2_norm3(self.gc2_atten(atten_feat_trans, video_adj_list.clone())))
 
         # -----------------------
         # Pool object graph embeddings for sg
