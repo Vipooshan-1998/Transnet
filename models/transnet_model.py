@@ -135,12 +135,14 @@ class SpaceTempGoG_detr_dad(nn.Module):
         # -----------------------
         # I3D feature processing
         # -----------------------
-        frame_embed_img = self.relu(self.gc2_norm_i3d(self.gc2_i3d(self.temporal_transformer_img(self.img_fc(img_feat).unsqueeze(0)).squeeze(0), video_adj_list)))
+        frame_embed_img = self.relu(self.gc2_norm_i3d(self.gc2_i3d(
+            self.temporal_transformer_img(self.img_fc(img_feat).unsqueeze(0)).squeeze(0), video_adj_list.clone())))
 
         # -----------------------
         # Attention feature processing
         # -----------------------
-        frame_embed_atten = self.relu(self.gc2_norm_atten(self.gc2_atten(self.temporal_transformer_atten(self.atten_fc(atten_feat).unsqueeze(0)).squeeze(0), video_adj_list)))
+        frame_embed_atten = self.relu(self.gc2_norm_atten(self.gc2_atten(
+            self.temporal_transformer_atten(self.atten_fc(atten_feat).unsqueeze(0)).squeeze(0), video_adj_list.clone())))
 
         # -----------------------
         # Concatenate all features
