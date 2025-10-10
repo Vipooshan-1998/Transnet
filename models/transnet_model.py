@@ -33,23 +33,15 @@ class SpaceTempGoG_detr_dad(nn.Module):
         )
         self.gc1_norm1 = InstanceNorm(embedding_dim // 2 * self.num_heads)
 
-        # self.gc1_temporal = TransformerConv(
-        #     in_channels=embedding_dim * 2 + embedding_dim // 2,
-        #     out_channels=embedding_dim // 2,
-        #     heads=self.num_heads,
-        #     edge_dim=1,
-        #     beta=True
-        # )
-        # self.gc1_norm2 = InstanceNorm(embedding_dim // 2 * self.num_heads)
-        
-        self.gc2_i3d = TransformerConv(
-            in_channels=embedding_dim * 2,
+        self.gc1_temporal = TransformerConv(
+            in_channels=embedding_dim * 2 + embedding_dim // 2,
             out_channels=embedding_dim // 2,
-            heads=self.num_heads
+            heads=self.num_heads,
+            edge_dim=1,
+            beta=True
         )
         self.gc1_norm2 = InstanceNorm(embedding_dim // 2 * self.num_heads)
-
-
+        
         # -----------------------
         # Cross-graph attention (interaction between spatial + temporal)
         # -----------------------
@@ -87,15 +79,22 @@ class SpaceTempGoG_detr_dad(nn.Module):
         # -----------------------
         # Frame-level GraphConv for img features
         # -----------------------
+        # self.gc2_i3d = TransformerConv(
+        #     in_channels=embedding_dim * 2,
+        #     out_channels=embedding_dim,
+        #     heads=self.num_heads,
+        #     edge_dim=1,
+        #     beta=True
+        # )
+        # self.gc2_norm2 = InstanceNorm(embedding_dim * self.num_heads)
+        
         self.gc2_i3d = TransformerConv(
             in_channels=embedding_dim * 2,
-            out_channels=embedding_dim,
-            heads=self.num_heads,
-            edge_dim=1,
-            beta=True
+            out_channels=embedding_dim // 2,
+            heads=self.num_heads
         )
-        self.gc2_norm2 = InstanceNorm(embedding_dim * self.num_heads)
-
+        self.gc2_norm2 = InstanceNorm(embedding_dim // 2 * self.num_heads)
+        
         # -----------------------
         # Classification
         # -----------------------
