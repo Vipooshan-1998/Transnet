@@ -143,7 +143,7 @@ class SpaceTempGoG_detr_dad(nn.Module):
         # Image feature processing: Transformer -> GraphConv
         # -----------------------
         img_feat_fc = self.img_fc(img_feat).unsqueeze(0)
-        img_feat_trans = self.temporal_transformer(img_feat_fc)
+        img_feat_trans = self.temporal_transformer_img(img_feat_fc)
         img_feat_trans = img_feat_trans.squeeze(0)  
         frame_embed_img = self.relu(self.gc2_norm2(self.gc2_i3d(img_feat_trans, video_adj_list)))
 
