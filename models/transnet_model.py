@@ -125,36 +125,42 @@ class SpaceTempGoG_detr_dad(nn.Module):
         n_embed, edge_index, _, batch_vec, _, _ = self.pool(n_embed, edge_index, None, batch_vec)
         g_embed = global_max_pool(n_embed, batch_vec).unsqueeze(0)  # (1, batch, feat)
 
+        # Concat + pooling
+        n_embed = torch.cat((n_embed_spatial, n_embed_temporal), 1)
+        n_embed, edge_index, _, batch_vec, _, _ = self.pool(n_embed, edge_index, None, batch_vec)
+        g_embed = global_max_pool(n_embed, batch_vec)  # (num_nodes, feat_dim)
+
         # -----------------------
-        # LSTM over pooled graph features
+        # LSTM over graph pooled features
         # -----------------------
-        lstm_out_graph, _ = self.temporal_lstm_graph(g_embed)
-        lstm_out_graph = lstm_out_graph[:, -1, :]  # last timestep
+        g_embed_seq = g_embed.unsqueeze(0)  # Add sequence dimension: (1, num_nodes, feat_dim)
+        g_embed_seq, _ = self.temporal_lstm_graph(g_embed_seq)
+        lstm_out_graph = g_embed_seq.squeeze(0)  # Back to (num_nodes, feat_dim)
 
         # -----------------------
         # I3D feature processing
         # -----------------------
         img_feat_proj = self.img_fc(img_feat)
-        img_feat_proj = self.temporal_transformer_img(img_feat_proj)
-
-        img_feat_proj = img_feat_proj.unsqueeze(0)  # add batch dim
-        lstm_out_img, _ = self.temporal_lstm_img(img_feat_proj)
-        lstm_out_img = lstm_out_img[:, -1, :]
+        img_feat_trans = self.temporal_transformer_img(img_feat_proj)
+        img_feat_seq = img_feat_trans.unsqueeze(0)  # (1, num_nodes, feat_dim)
+        img_feat_seq, _ = self.temporal_lstm_img(img_feat_seq)
+        lstm_out_img = img_feat_seq.squeeze(0)
 
         # -----------------------
         # Attention SlowFast feature processing
         # -----------------------
         atten_feat_proj = self.atten_fc(atten_feat)
-        atten_feat_proj = self.temporal_transformer_atten(atten_feat_proj)
-
-        atten_feat_proj = atten_feat_proj.unsqueeze(0)
-        lstm_out_atten, _ = self.temporal_lstm_atten(atten_feat_proj)
-        lstm_out_atten = lstm_out_atten[:, -1, :]
+        atten_feat_trans = self.temporal_transformer_atten(atten_feat_proj)
+        atten_feat_seq = atten_feat_trans.unsqueeze(0)  # (1, num_nodes, feat_dim)
+        atten_feat_seq, _ = self.temporal_lstm_atten(atten_feat_seq)
+        lstm_out_atten = atten_feat_seq.squeeze(0)
 
         # -----------------------
         # Concatenate all LSTM outputs
         # -----------------------
-        fused_feat = torch.cat((lstm_out_graph, lstm_out_img, lstm_out_atten), dim=-1)
+        fused_feat = torch.cat((lstm_out_graph, lstm_out_img, lstm_out_atten), dim=1)
+
+        # -----------------------
 
         # -----------------------
         # Classification
