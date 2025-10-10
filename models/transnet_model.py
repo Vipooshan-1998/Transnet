@@ -1,11 +1,6 @@
 import torch
 import torch.nn as nn
-from torch_geometric.nn import (
-    TransformerConv,
-    SAGPooling,
-    global_max_pool,
-    InstanceNorm
-)
+from torch_geometric.nn import TransformerConv, SAGPooling, global_max_pool, InstanceNorm
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 
@@ -13,8 +8,8 @@ class SpaceTempGoG_detr_dad(nn.Module):
     def __init__(self, input_dim=2048, embedding_dim=128, img_feat_dim=2048, num_classes=2):
         super(SpaceTempGoG_detr_dad, self).__init__()
 
-        self.num_heads = 1
-        self.num_layers = 1
+        self.num_heads = 4
+        self.num_layers = 2
         self.input_dim = input_dim
         self.embedding_dim = embedding_dim
 
@@ -56,42 +51,48 @@ class SpaceTempGoG_detr_dad(nn.Module):
         self.img_fc = nn.Linear(img_feat_dim, embedding_dim * 2)
         self.atten_fc = nn.Linear(img_feat_dim, embedding_dim * 2)
 
+        # Image Transformer
         encoder_layer_img = TransformerEncoderLayer(
             d_model=embedding_dim * 2, nhead=self.num_heads, batch_first=True
         )
+        self.temporal_transformer_img = TransformerEncoder(encoder_layer_img, num_layers=self.num_layers)
+
+        # Attention Transformer
         encoder_layer_atten = TransformerEncoderLayer(
             d_model=embedding_dim * 2, nhead=self.num_heads, batch_first=True
         )
-
-        self.temporal_transformer_img = TransformerEncoder(encoder_layer_img, num_layers=self.num_layers)
         self.temporal_transformer_atten = TransformerEncoder(encoder_layer_atten, num_layers=self.num_layers)
 
-        # -----------------------
-        # LSTMs (num_layers=1, hidden_size = input_size)
-        # -----------------------
-        self.temporal_lstm_graph = nn.LSTM(
-            input_size=embedding_dim * self.num_heads,
-            hidden_size=embedding_dim * self.num_heads,
-            num_layers=1,
-            batch_first=True
+        # Global graph Transformer
+        encoder_layer_graph = TransformerEncoderLayer(
+            d_model=embedding_dim * self.num_heads * 2, nhead=self.num_heads, batch_first=True
         )
-        self.temporal_lstm_img = nn.LSTM(
-            input_size=embedding_dim * 2,
-            hidden_size=embedding_dim * 2,
-            num_layers=1,
-            batch_first=True
+        self.temporal_transformer_graph = TransformerEncoder(encoder_layer_graph, num_layers=self.num_layers)
+
+        # Frame-level GraphConv after pooling
+        self.gc2_sg = TransformerConv(
+            in_channels=embedding_dim * self.num_heads * 2,
+            out_channels=embedding_dim,
+            heads=self.num_heads,
+            edge_dim=1,
+            beta=True
         )
-        self.temporal_lstm_atten = nn.LSTM(
-            input_size=embedding_dim * 2,
-            hidden_size=embedding_dim * 2,
-            num_layers=1,
-            batch_first=True
+        self.gc2_norm1 = InstanceNorm(embedding_dim * self.num_heads)
+
+        # GraphConv for img features
+        self.gc2_i3d = TransformerConv(
+            in_channels=embedding_dim * 2,
+            out_channels=embedding_dim,
+            heads=self.num_heads,
+            edge_dim=1,
+            beta=True
         )
+        self.gc2_norm2 = InstanceNorm(embedding_dim * self.num_heads)
 
         # -----------------------
         # Classification
         # -----------------------
-        concat_dim = embedding_dim * self.num_heads + embedding_dim * 2 + embedding_dim * 2
+        concat_dim = embedding_dim * 3 + embedding_dim * self.num_heads * 2  # g_embed_out + frame_embed_sg + frame_embed_img + optionally atten
         self.classify_fc1 = nn.Linear(concat_dim, embedding_dim)
         self.classify_fc2 = nn.Linear(embedding_dim, num_classes)
 
@@ -99,7 +100,7 @@ class SpaceTempGoG_detr_dad(nn.Module):
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x, edge_index, img_feat, atten_feat,
-                edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec):
+                edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec, video_adj_list):
 
         # -----------------------
         # Object graph processing
@@ -110,52 +111,41 @@ class SpaceTempGoG_detr_dad(nn.Module):
 
         # Spatial graph
         edge_attr_spatial = edge_embeddings[:, -1].unsqueeze(1).to(x)
-        n_embed_spatial = self.relu(self.gc1_norm1(
-            self.gc1_spatial(x, edge_index, edge_attr=edge_attr_spatial)
-        ))
+        n_embed_spatial = self.relu(self.gc1_norm1(self.gc1_spatial(x, edge_index, edge_attr=edge_attr_spatial)))
 
         # Temporal graph
         edge_attr_temporal = temporal_edge_w.unsqueeze(1).to(x)
-        n_embed_temporal = self.relu(self.gc1_norm2(
-            self.gc1_temporal(x, temporal_adj_list, edge_attr=edge_attr_temporal)
-        ))
+        n_embed_temporal = self.relu(self.gc1_norm2(self.gc1_temporal(x, temporal_adj_list, edge_attr=edge_attr_temporal)))
 
-        # Concat + pooling
+        # -----------------------
+        # Global pooling + Transformer
+        # -----------------------
         n_embed = torch.cat((n_embed_spatial, n_embed_temporal), 1)
         n_embed, edge_index, _, batch_vec, _, _ = self.pool(n_embed, edge_index, None, batch_vec)
-        g_embed = global_max_pool(n_embed, batch_vec)  # (num_nodes, feat_dim)
+        g_embed = global_max_pool(n_embed, batch_vec)
+        g_embed_trans = self.temporal_transformer_graph(g_embed.unsqueeze(0)).squeeze(0)
 
         # -----------------------
-        # LSTM over graph pooled features
+        # Image feature processing: Transformer -> GraphConv
         # -----------------------
-        g_embed_seq = g_embed.unsqueeze(0)  # Add sequence dimension: (1, num_nodes, feat_dim)
-        g_embed_seq, _ = self.temporal_lstm_graph(g_embed_seq)
-        lstm_out_graph = g_embed_seq.squeeze(0)  # Back to (num_nodes, feat_dim)
+        img_feat_trans = self.temporal_transformer_img(self.img_fc(img_feat).unsqueeze(0)).squeeze(0)
+        frame_embed_img = self.relu(self.gc2_norm2(self.gc2_i3d(img_feat_trans, video_adj_list)))
 
         # -----------------------
-        # I3D feature processing
+        # Frame-level graph features -> GraphConv -> Transformer
         # -----------------------
-        img_feat_proj = self.img_fc(img_feat)
-        img_feat_trans = self.temporal_transformer_img(img_feat_proj)
-        img_feat_seq = img_feat_trans.unsqueeze(0)  # (1, num_nodes, feat_dim)
-        img_feat_seq, _ = self.temporal_lstm_img(img_feat_seq)
-        lstm_out_img = img_feat_seq.squeeze(0)
+        frame_embed_sg = self.relu(self.gc2_norm1(self.gc2_sg(g_embed, video_adj_list)))
+        frame_embed_sg = self.temporal_transformer_graph(frame_embed_sg.unsqueeze(0)).squeeze(0)
 
         # -----------------------
         # Attention SlowFast feature processing
         # -----------------------
-        atten_feat_proj = self.atten_fc(atten_feat)
-        atten_feat_trans = self.temporal_transformer_atten(atten_feat_proj)
-        atten_feat_seq = atten_feat_trans.unsqueeze(0)  # (1, num_nodes, feat_dim)
-        atten_feat_seq, _ = self.temporal_lstm_atten(atten_feat_seq)
-        lstm_out_atten = atten_feat_seq.squeeze(0)
+        atten_feat_seq = self.temporal_transformer_atten(self.atten_fc(atten_feat).unsqueeze(0)).squeeze(0)
 
         # -----------------------
-        # Concatenate all LSTM outputs
+        # Concatenate all outputs
         # -----------------------
-        fused_feat = torch.cat((lstm_out_graph, lstm_out_img, lstm_out_atten), dim=1)
-
-        # -----------------------
+        fused_feat = torch.cat((g_embed_trans, frame_embed_sg, frame_embed_img, atten_feat_seq), dim=1)
 
         # -----------------------
         # Classification
@@ -165,3 +155,4 @@ class SpaceTempGoG_detr_dad(nn.Module):
         probs_mc = self.softmax(logits_mc)
 
         return logits_mc, probs_mc
+
