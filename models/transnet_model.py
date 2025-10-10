@@ -322,7 +322,7 @@ from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 
 class SpaceTempGoG_detr_dad(nn.Module):
-    def __init__(self, input_dim=2048, embedding_dim=128, img_feat_dim=2048, num_classes=2):
+    def __init__(self, input_dim=2048, embedding_dim=128, img_feat_dim=2048, atten_feat_dim=2304, num_classes=2):
         super(SpaceTempGoG_detr_dad, self).__init__()
 
         self.num_heads = 4
@@ -365,7 +365,7 @@ class SpaceTempGoG_detr_dad(nn.Module):
         # I3D and Attention-SlowFast features -> Transformers
         # -----------------------
         self.img_fc = nn.Linear(img_feat_dim, embedding_dim * 2)
-        self.atten_fc = nn.Linear(img_feat_dim, embedding_dim * 2)
+        self.atten_fc = nn.Linear(atten_feat_dim, embedding_dim * 2)
 
         encoder_layer_img = TransformerEncoderLayer(
             d_model=embedding_dim * 2, nhead=self.num_heads, batch_first=True
