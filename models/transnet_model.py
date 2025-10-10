@@ -123,11 +123,6 @@ class SpaceTempGoG_detr_dad(nn.Module):
         # Concat + pooling
         n_embed = torch.cat((n_embed_spatial, n_embed_temporal), 1)
         n_embed, edge_index, _, batch_vec, _, _ = self.pool(n_embed, edge_index, None, batch_vec)
-        g_embed = global_max_pool(n_embed, batch_vec).unsqueeze(0)  # (1, batch, feat)
-
-        # Concat + pooling
-        n_embed = torch.cat((n_embed_spatial, n_embed_temporal), 1)
-        n_embed, edge_index, _, batch_vec, _, _ = self.pool(n_embed, edge_index, None, batch_vec)
         g_embed = global_max_pool(n_embed, batch_vec)  # (num_nodes, feat_dim)
 
         # -----------------------
