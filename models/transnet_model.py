@@ -14,7 +14,7 @@ class SpaceTempGoG_detr_dad(nn.Module):
         super(SpaceTempGoG_detr_dad, self).__init__()
 
         self.num_heads = 1
-		self.num_layers = 1
+        self.num_layers = 1
         self.input_dim = input_dim
         self.embedding_dim = embedding_dim
 
