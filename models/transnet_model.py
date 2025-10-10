@@ -142,23 +142,22 @@ class SpaceTempGoG_detr_dad(nn.Module):
         # -----------------------
         # Image feature processing: Transformer -> GraphConv
         # -----------------------
-        img_feat_trans = self.temporal_transformer_img(self.img_fc(img_feat).unsqueeze(0)).squeeze(0)
+        img_feat_fc = self.img_fc(img_feat).unsqueeze(0)
+        img_feat_trans = self.temporal_transformer(img_feat_fc)
+        img_feat_trans = img_feat_trans.squeeze(0)  
         frame_embed_img = self.relu(self.gc2_norm2(self.gc2_i3d(img_feat_trans, video_adj_list)))
-
-        # -----------------------
-        # Frame-level graph features -> Transformer
-        # -----------------------
-        frame_embed_sg = self.temporal_transformer_cross(n_embed_cross.unsqueeze(0)).squeeze(0)
 
         # -----------------------
         # Attention SlowFast feature processing
         # -----------------------
-        atten_feat_seq = self.temporal_transformer_atten(self.atten_fc(atten_feat).unsqueeze(0)).squeeze(0)
+        atten_feat_fc = self.atten_fc(atten_feat).unsqueeze(0)
+        atten_feat_trans = self.temporal_transformer_atten(atten_feat_fc)
+        atten_feat_trans = atten_feat_trans.squeeze(0)
 
         # -----------------------
         # Concatenate all outputs
         # -----------------------
-        fused_feat = torch.cat((n_embed_cross_trans, frame_embed_sg, frame_embed_img, atten_feat_seq), dim=1)
+        fused_feat = torch.cat((n_embed_cross_trans, frame_embed_img, atten_feat_trans), dim=1)
         # print("Concatenated feature shape:", fused_feat.shape)
 
         # -----------------------
