@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch_geometric.nn import TransformerConv, InstanceNorm
-from torch.nn import TransformerEncoder, TransformerEncoderLayer, LayerNorm
+from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 
 class SpaceTempGoG_detr_dad(nn.Module):
@@ -16,17 +16,17 @@ class SpaceTempGoG_detr_dad(nn.Module):
         # -----------------------
         # Object graph features
         # -----------------------
-        self.x_fc = nn.Linear(self.input_dim, embedding_dim * 2)
+        self.x_fc = nn.Linear(self.input_dim, embedding_dim * 2)   # 2048 -> 256
         self.x_bn1 = nn.BatchNorm1d(embedding_dim * 2)
-        self.obj_l_fc = nn.Linear(300, embedding_dim // 2)
+        self.obj_l_fc = nn.Linear(300, embedding_dim // 2)         # 300 -> 64
         self.obj_l_bn1 = nn.BatchNorm1d(embedding_dim // 2)
 
         # -----------------------
         # Spatial and temporal graph transformers
         # -----------------------
         self.gc1_spatial = TransformerConv(
-            in_channels=embedding_dim * 2 + embedding_dim // 2,
-            out_channels=embedding_dim // 2,
+            in_channels=embedding_dim * 2 + embedding_dim // 2,  # 256+64=320
+            out_channels=embedding_dim // 2,                      # 64
             heads=self.num_heads,
             edge_dim=1,
             beta=True
@@ -43,16 +43,14 @@ class SpaceTempGoG_detr_dad(nn.Module):
         self.gc1_norm2 = InstanceNorm(embedding_dim // 2 * self.num_heads)
 
         # -----------------------
-        # Cross graph TransformerConv
+        # Cross-graph attention (interaction between spatial + temporal)
         # -----------------------
         self.gc_cross = TransformerConv(
-            in_channels=(embedding_dim // 2) * self.num_heads * 2,
-            out_channels=embedding_dim,
-            heads=self.num_heads,
-            edge_dim=1,
-            beta=True
+            in_channels=(embedding_dim // 2 * self.num_heads) * 2,  # concat spatial + temporal
+            out_channels=embedding_dim // 2,
+            heads=self.num_heads
         )
-        self.gc_cross_norm = InstanceNorm(embedding_dim * self.num_heads)
+        self.gc_cross_norm = InstanceNorm(embedding_dim // 2 * self.num_heads)
 
         # -----------------------
         # I3D and Attention-SlowFast features -> Transformers
@@ -74,21 +72,13 @@ class SpaceTempGoG_detr_dad(nn.Module):
 
         # Transformer for cross-graph embeddings
         encoder_layer_cross = TransformerEncoderLayer(
-            d_model=embedding_dim * self.num_heads, nhead=self.num_heads, batch_first=True
+            d_model=embedding_dim // 2 * self.num_heads, nhead=self.num_heads, batch_first=True
         )
         self.temporal_transformer_cross = TransformerEncoder(encoder_layer_cross, num_layers=self.num_layers)
 
-        # Frame-level GraphConv for pooled graph features
-        self.gc2_sg = TransformerConv(
-            in_channels=embedding_dim * self.num_heads,
-            out_channels=embedding_dim,
-            heads=self.num_heads,
-            edge_dim=1,
-            beta=True
-        )
-        self.gc2_norm1 = InstanceNorm(embedding_dim * self.num_heads)
-
-        # GraphConv for img features
+        # -----------------------
+        # Frame-level GraphConv for img features
+        # -----------------------
         self.gc2_i3d = TransformerConv(
             in_channels=embedding_dim * 2,
             out_channels=embedding_dim,
@@ -101,7 +91,8 @@ class SpaceTempGoG_detr_dad(nn.Module):
         # -----------------------
         # Classification
         # -----------------------
-        concat_dim = embedding_dim * 4  # frame_embed_sg + frame_embed_img + atten_feat_seq + cross_trans
+        concat_dim = (embedding_dim // 2 * self.num_heads) + embedding_dim + embedding_dim * self.num_heads + embedding_dim * 2
+        # cross_trans + frame_embed_sg + frame_embed_img + atten_feat_seq
         self.classify_fc1 = nn.Linear(concat_dim, embedding_dim)
         self.classify_fc2 = nn.Linear(embedding_dim, num_classes)
 
@@ -112,7 +103,7 @@ class SpaceTempGoG_detr_dad(nn.Module):
                 edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec):
 
         # -----------------------
-        # Object graph processing
+        # Object graph features
         # -----------------------
         x_feat = self.relu(self.x_bn1(self.x_fc(x[:, :self.input_dim])))
         x_label = self.relu(self.obj_l_bn1(self.obj_l_fc(x[:, self.input_dim:])))
@@ -148,10 +139,9 @@ class SpaceTempGoG_detr_dad(nn.Module):
         frame_embed_img = self.relu(self.gc2_norm2(self.gc2_i3d(img_feat_trans, video_adj_list)))
 
         # -----------------------
-        # Frame-level graph features -> GraphConv -> Transformer
+        # Frame-level graph features -> Transformer
         # -----------------------
-        frame_embed_sg = self.relu(self.gc2_norm1(self.gc2_sg(n_embed_cross, video_adj_list)))
-        frame_embed_sg = self.temporal_transformer_cross(frame_embed_sg.unsqueeze(0)).squeeze(0)
+        frame_embed_sg = self.temporal_transformer_cross(n_embed_cross.unsqueeze(0)).squeeze(0)
 
         # -----------------------
         # Attention SlowFast feature processing
