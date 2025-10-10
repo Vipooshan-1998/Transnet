@@ -579,8 +579,8 @@ class SpaceTempGoG_detr_dad(nn.Module):
         # Helper function: sanitize activations
         # -----------------------
         def sanitize(tensor, name):
-            if torch.isnan(tensor).any() or torch.isinf(tensor).any():
-                print(f"[⚠️ Sanitizing {name}] min={tensor.min().item()}, max={tensor.max().item()}")
+            # if torch.isnan(tensor).any() or torch.isinf(tensor).any():
+                # print(f"[⚠️ Sanitizing {name}] min={tensor.min().item()}, max={tensor.max().item()}")
             tensor = torch.nan_to_num(tensor, nan=0.0, posinf=1e3, neginf=-1e3)
             tensor = torch.clamp(tensor, -1e3, 1e3)
             return tensor
@@ -589,13 +589,13 @@ class SpaceTempGoG_detr_dad(nn.Module):
         # Object graph processing
         # -----------------------
         x_feat = self.relu(self.x_bn1(self.x_fc(x[:, :self.input_dim])))
-        x_feat = sanitize(x_feat, "x_feat")
+        # x_feat = sanitize(x_feat, "x_feat")
     
         x_label = self.relu(self.obj_l_bn1(self.obj_l_fc(x[:, self.input_dim:])))
-        x_label = sanitize(x_label, "x_label")
+        # x_label = sanitize(x_label, "x_label")
     
         x = torch.cat((x_feat, x_label), 1)
-        x = sanitize(x, "x (concatenated)")
+        # x = sanitize(x, "x (concatenated)")
     
         # -----------------------
         # Spatial graph
@@ -604,7 +604,7 @@ class SpaceTempGoG_detr_dad(nn.Module):
         n_embed_spatial = self.relu(self.gc1_norm1(
             self.gc1_spatial(x, edge_index, edge_attr=edge_attr_spatial)
         ))
-        n_embed_spatial = sanitize(n_embed_spatial, "n_embed_spatial")
+        # n_embed_spatial = sanitize(n_embed_spatial, "n_embed_spatial")
     
         # -----------------------
         # Temporal graph
@@ -613,19 +613,19 @@ class SpaceTempGoG_detr_dad(nn.Module):
         n_embed_temporal = self.relu(self.gc1_norm2(
             self.gc1_temporal(x, temporal_adj_list, edge_attr=edge_attr_temporal)
         ))
-        n_embed_temporal = sanitize(n_embed_temporal, "n_embed_temporal")
+        # n_embed_temporal = sanitize(n_embed_temporal, "n_embed_temporal")
     
         # -----------------------
         # Concat + pooling
         # -----------------------
         n_embed = torch.cat((n_embed_spatial, n_embed_temporal), 1)
-        n_embed = sanitize(n_embed, "n_embed before pooling")
+        # n_embed = sanitize(n_embed, "n_embed before pooling")
     
         n_embed, edge_index, _, batch_vec, _, _ = self.pool(n_embed, edge_index, None, batch_vec)
-        n_embed = sanitize(n_embed, "n_embed after pooling")
+        # n_embed = sanitize(n_embed, "n_embed after pooling")
     
         g_embed = global_max_pool(n_embed, batch_vec)
-        g_embed = sanitize(g_embed, "g_embed")
+        # g_embed = sanitize(g_embed, "g_embed")
     
         # -----------------------
         # LSTM over graph pooled features
@@ -633,13 +633,13 @@ class SpaceTempGoG_detr_dad(nn.Module):
         g_embed_seq = g_embed.unsqueeze(0)
         g_embed_seq, _ = self.temporal_lstm_graph(g_embed_seq)
         lstm_out_graph = g_embed_seq.squeeze(0)
-        lstm_out_graph = sanitize(lstm_out_graph, "lstm_out_graph")
+        # lstm_out_graph = sanitize(lstm_out_graph, "lstm_out_graph")
     
         # -----------------------
         # I3D feature processing
         # -----------------------
         img_feat_proj = self.img_fc(img_feat)
-        img_feat_proj = sanitize(img_feat_proj, "img_feat_proj")
+        # img_feat_proj = sanitize(img_feat_proj, "img_feat_proj")
     
         img_feat_trans = self.temporal_transformer_img(img_feat_proj)
         img_feat_trans = sanitize(img_feat_trans, "img_feat_trans")
@@ -647,39 +647,39 @@ class SpaceTempGoG_detr_dad(nn.Module):
         img_feat_seq = img_feat_trans.unsqueeze(0)
         img_feat_seq, _ = self.temporal_lstm_img(img_feat_seq)
         lstm_out_img = img_feat_seq.squeeze(0)
-        lstm_out_img = sanitize(lstm_out_img, "lstm_out_img")
+        # lstm_out_img = sanitize(lstm_out_img, "lstm_out_img")
     
         # -----------------------
         # Attention SlowFast feature processing
         # -----------------------
         atten_feat_proj = self.atten_fc(atten_feat)
-        atten_feat_proj = sanitize(atten_feat_proj, "atten_feat_proj")
+        # atten_feat_proj = sanitize(atten_feat_proj, "atten_feat_proj")
     
         atten_feat_trans = self.temporal_transformer_atten(atten_feat_proj)
-        atten_feat_trans = sanitize(atten_feat_trans, "atten_feat_trans")
+        # atten_feat_trans = sanitize(atten_feat_trans, "atten_feat_trans")
     
         atten_feat_seq = atten_feat_trans.unsqueeze(0)
         atten_feat_seq, _ = self.temporal_lstm_atten(atten_feat_seq)
         lstm_out_atten = atten_feat_seq.squeeze(0)
-        lstm_out_atten = sanitize(lstm_out_atten, "lstm_out_atten")
+        # lstm_out_atten = sanitize(lstm_out_atten, "lstm_out_atten")
     
         # -----------------------
         # Concatenate all LSTM outputs
         # -----------------------
         fused_feat = torch.cat((lstm_out_graph, lstm_out_img, lstm_out_atten), dim=1)
-        fused_feat = sanitize(fused_feat, "fused_feat before classification")
+        # fused_feat = sanitize(fused_feat, "fused_feat before classification")
     
         # -----------------------
         # Classification
         # -----------------------
         fused_feat = self.relu(self.classify_fc1(fused_feat))
-        fused_feat = sanitize(fused_feat, "fused_feat after fc1")
+        # fused_feat = sanitize(fused_feat, "fused_feat after fc1")
     
         logits_mc = self.classify_fc2(fused_feat)
-        logits_mc = sanitize(logits_mc, "logits_mc")
+        # logits_mc = sanitize(logits_mc, "logits_mc")
     
         probs_mc = self.softmax(logits_mc)
-        probs_mc = sanitize(probs_mc, "probs_mc")
+        # probs_mc = sanitize(probs_mc, "probs_mc")
 
     
         return logits_mc, probs_mc
