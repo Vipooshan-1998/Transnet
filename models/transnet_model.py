@@ -47,7 +47,7 @@ class SpaceTempGoG_detr_dad(nn.Module):
             out_channels=embedding_dim // 2,
             heads=self.num_heads
         )
-        self.gc2_norm2 = InstanceNorm(embedding_dim // 2 * self.num_heads)
+        self.gc1_norm2 = InstanceNorm(embedding_dim // 2 * self.num_heads)
 
 
         # -----------------------
