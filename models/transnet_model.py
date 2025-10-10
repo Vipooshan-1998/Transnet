@@ -475,4 +475,8 @@ class SpaceTempGoG_detr_dad(nn.Module):
         logits_mc = self.classify_fc2(fused_feat)
         probs_mc = self.softmax(logits_mc)
 
+        # If you compute min_pred from probs or logits, inspect them:
+        print("logits_mc.shape:", logits_mc.shape, "min/max logits:", logits_mc.min().item(), logits_mc.max().item())
+        print("probs_mc.shape:", probs_mc.shape, "min/max probs:", probs_mc.min().item(), probs_mc.max().item())
+
         return logits_mc, probs_mc
