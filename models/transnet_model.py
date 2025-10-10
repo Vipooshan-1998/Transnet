@@ -99,8 +99,8 @@ class SpaceTempGoG_detr_dad(nn.Module):
         self.relu = nn.LeakyReLU(0.2)
         self.softmax = nn.Softmax(dim=-1)
 
-    def forward(self, x, edge_index, img_feat, atten_feat,
-                edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec, video_adj_list):
+    def forward(self, x, edge_index, img_feat, video_adj_list, atten_feat,
+                edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec):
 
         # -----------------------
         # Object graph processing
