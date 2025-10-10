@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from torch_geometric.nn import TransformerConv, SAGPooling, global_max_pool, InstanceNorm
-from torch.nn import TransformerEncoder, TransformerEncoderLayer
+from torch_geometric.nn import TransformerConv, InstanceNorm
+from torch.nn import TransformerEncoder, TransformerEncoderLayer, LayerNorm
 
 
 class SpaceTempGoG_detr_dad(nn.Module):
@@ -42,8 +42,17 @@ class SpaceTempGoG_detr_dad(nn.Module):
         )
         self.gc1_norm2 = InstanceNorm(embedding_dim // 2 * self.num_heads)
 
-        # Graph pooling
-        self.pool = SAGPooling(embedding_dim * self.num_heads, ratio=0.8)
+        # -----------------------
+        # Cross graph TransformerConv
+        # -----------------------
+        self.gc_cross = TransformerConv(
+            in_channels=(embedding_dim // 2) * self.num_heads * 2,
+            out_channels=embedding_dim,
+            heads=self.num_heads,
+            edge_dim=1,
+            beta=True
+        )
+        self.gc_cross_norm = InstanceNorm(embedding_dim * self.num_heads)
 
         # -----------------------
         # I3D and Attention-SlowFast features -> Transformers
@@ -63,15 +72,15 @@ class SpaceTempGoG_detr_dad(nn.Module):
         )
         self.temporal_transformer_atten = TransformerEncoder(encoder_layer_atten, num_layers=self.num_layers)
 
-        # Global graph Transformer
-        encoder_layer_graph = TransformerEncoderLayer(
-            d_model=embedding_dim * self.num_heads * 2, nhead=self.num_heads, batch_first=True
+        # Transformer for cross-graph embeddings
+        encoder_layer_cross = TransformerEncoderLayer(
+            d_model=embedding_dim * self.num_heads, nhead=self.num_heads, batch_first=True
         )
-        self.temporal_transformer_graph = TransformerEncoder(encoder_layer_graph, num_layers=self.num_layers)
+        self.temporal_transformer_cross = TransformerEncoder(encoder_layer_cross, num_layers=self.num_layers)
 
-        # Frame-level GraphConv after pooling
+        # Frame-level GraphConv for pooled graph features
         self.gc2_sg = TransformerConv(
-            in_channels=embedding_dim * self.num_heads * 2,
+            in_channels=embedding_dim * self.num_heads,
             out_channels=embedding_dim,
             heads=self.num_heads,
             edge_dim=1,
@@ -92,7 +101,7 @@ class SpaceTempGoG_detr_dad(nn.Module):
         # -----------------------
         # Classification
         # -----------------------
-        concat_dim = embedding_dim * 3 + embedding_dim * self.num_heads * 2  # g_embed_out + frame_embed_sg + frame_embed_img + optionally atten
+        concat_dim = embedding_dim * 4  # frame_embed_sg + frame_embed_img + atten_feat_seq + cross_trans
         self.classify_fc1 = nn.Linear(concat_dim, embedding_dim)
         self.classify_fc2 = nn.Linear(embedding_dim, num_classes)
 
@@ -109,21 +118,28 @@ class SpaceTempGoG_detr_dad(nn.Module):
         x_label = self.relu(self.obj_l_bn1(self.obj_l_fc(x[:, self.input_dim:])))
         x = torch.cat((x_feat, x_label), 1)
 
+        # -----------------------
         # Spatial graph
-        edge_attr_spatial = edge_embeddings[:, -1].unsqueeze(1).to(x)
-        n_embed_spatial = self.relu(self.gc1_norm1(self.gc1_spatial(x, edge_index, edge_attr=edge_attr_spatial)))
+        # -----------------------
+        edge_attr_spatial = edge_embeddings[:, -1].unsqueeze(1).to(x.dtype).to(x.device)
+        n_embed_spatial = self.relu(self.gc1_norm1(
+            self.gc1_spatial(x, edge_index, edge_attr=edge_attr_spatial)
+        ))
 
+        # -----------------------
         # Temporal graph
-        edge_attr_temporal = temporal_edge_w.unsqueeze(1).to(x)
-        n_embed_temporal = self.relu(self.gc1_norm2(self.gc1_temporal(x, temporal_adj_list, edge_attr=edge_attr_temporal)))
+        # -----------------------
+        edge_attr_temporal = temporal_edge_w.unsqueeze(1).to(x.dtype).to(x.device)
+        n_embed_temporal = self.relu(self.gc1_norm2(
+            self.gc1_temporal(x, temporal_adj_list, edge_attr=edge_attr_temporal)
+        ))
 
         # -----------------------
-        # Global pooling + Transformer
+        # Cross-graph attention + Transformer
         # -----------------------
-        n_embed = torch.cat((n_embed_spatial, n_embed_temporal), 1)
-        n_embed, edge_index, _, batch_vec, _, _ = self.pool(n_embed, edge_index, None, batch_vec)
-        g_embed = global_max_pool(n_embed, batch_vec)
-        g_embed_trans = self.temporal_transformer_graph(g_embed.unsqueeze(0)).squeeze(0)
+        n_embed_cross = torch.cat((n_embed_spatial, n_embed_temporal), dim=-1)
+        n_embed_cross = self.relu(self.gc_cross_norm(self.gc_cross(n_embed_cross, edge_index)))
+        n_embed_cross_trans = self.temporal_transformer_cross(n_embed_cross.unsqueeze(0)).squeeze(0)
 
         # -----------------------
         # Image feature processing: Transformer -> GraphConv
@@ -134,8 +150,8 @@ class SpaceTempGoG_detr_dad(nn.Module):
         # -----------------------
         # Frame-level graph features -> GraphConv -> Transformer
         # -----------------------
-        frame_embed_sg = self.relu(self.gc2_norm1(self.gc2_sg(g_embed, video_adj_list)))
-        frame_embed_sg = self.temporal_transformer_graph(frame_embed_sg.unsqueeze(0)).squeeze(0)
+        frame_embed_sg = self.relu(self.gc2_norm1(self.gc2_sg(n_embed_cross, video_adj_list)))
+        frame_embed_sg = self.temporal_transformer_cross(frame_embed_sg.unsqueeze(0)).squeeze(0)
 
         # -----------------------
         # Attention SlowFast feature processing
@@ -145,7 +161,8 @@ class SpaceTempGoG_detr_dad(nn.Module):
         # -----------------------
         # Concatenate all outputs
         # -----------------------
-        fused_feat = torch.cat((g_embed_trans, frame_embed_sg, frame_embed_img, atten_feat_seq), dim=1)
+        fused_feat = torch.cat((n_embed_cross_trans, frame_embed_sg, frame_embed_img, atten_feat_seq), dim=1)
+        # print("Concatenated feature shape:", fused_feat.shape)
 
         # -----------------------
         # Classification
@@ -155,4 +172,3 @@ class SpaceTempGoG_detr_dad(nn.Module):
         probs_mc = self.softmax(logits_mc)
 
         return logits_mc, probs_mc
-
