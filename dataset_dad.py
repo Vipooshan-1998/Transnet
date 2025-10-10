@@ -16,10 +16,6 @@ from torch_geometric.data import InMemoryDataset
 from nltk.tokenize import sent_tokenize, word_tokenize
 import spacy
 
-import torchvision.io as io
-import cv2
-import numpy as np
-
 
 class Dataset(Dataset):
     def __init__(self, dataset_path, img_dataset_path, split_path, ref_interval, objmap_file, training, attention_path):
@@ -113,35 +109,6 @@ class Dataset(Dataset):
             toa_dict[anno['vid']] = toa
         return toa_dict
 
-    def read_attention_video_grayscale(self, att_file):
-            """
-            Read a grayscale attention video and return frames as a NumPy array of shape (T, H, W)
-            
-            Args:
-                att_file (str): Path to the attention video (.mp4)
-		        
-            Returns:
-                np.ndarray: Video frames, shape (T, H, W)
-            """
-            cap = cv2.VideoCapture(att_file)
-            frames = []
-		
-            while True:
-                ret, frame = cap.read()
-                if not ret:
-                    break
-		        
-                # Convert to grayscale if frame has 3 channels
-                if len(frame.shape) == 3:
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-		
-                frames.append(frame)
-		
-            cap.release()
-		    
-            frames = np.stack(frames)  # shape: (T, H, W)
-            return frames
-
 
     def _get_distances(self, a, b, p):
         return torch.abs(((b[1] - a[1])*p[0] - (b[0] - a[0])*p[1] + b[0]*a[1] - b[1]*a[0]) / torch.sqrt(torch.pow(b[1] - a[1], 2) + torch.pow(b[0] - a[0], 2)))
@@ -197,12 +164,12 @@ class Dataset(Dataset):
 		# Attention
         if curr_vid_label > 0:
             att_file = os.path.join(self.attention_path, feature_path.split('/')[-2], "positive",
-                                    feature_path.split('/')[-1].split(".")[0][5:] + '.mp4')
+                                    feature_path.split('/')[-1].split(".")[0][5:] + '.npy')
         else:
             att_file = os.path.join(self.attention_path, feature_path.split('/')[-2], "negative",
-                                    feature_path.split('/')[-1].split(".")[0][5:] + '-neg.mp4')
+                                    feature_path.split('/')[-1].split(".")[0][5:] + '-neg.npy')
 
-        all_att_feat = self.read_attention_video_grayscale(att_file)
+        all_att_feat = self.transform(np.load(att_file)).squeeze(0)
 
         # Calculating the bbox centers
         cx, cy = (all_bbox[:, :, 0] + all_bbox[:, :, 2]) / 2, (all_bbox[:, :, 1] + all_bbox[:, :, 3]) / 2
@@ -316,6 +283,7 @@ class Dataset(Dataset):
     def __len__(self):
         return len(self.feature_paths)
     
+
 
 
 
