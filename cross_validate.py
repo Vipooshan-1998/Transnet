@@ -40,6 +40,7 @@ random.seed(0)
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_path", type=str, default="data/dota/obj_feat", help="Path to extracted objects data")
 parser.add_argument("--img_dataset_path", type=str, default="data/dota/slowfast_feat", help="Path to frame feature data")
+parser.add_argument("--attention_path", type=str, default="", help="Path to attention video data")
 parser.add_argument("--toas_files_path", type=str, default="data/dota/toas", help="Path to frame of accidents feature data")
 parser.add_argument("--obj_mapping_file", type=str, default="data/dota/obj_idx_to_labels.json",
                     help="path to object label mapping file")
@@ -85,7 +86,7 @@ def test_model(epoch, model, test_dataloader, fold):
 
     for batch_i, (
     X, edge_index, y_true, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, obj_vis_feat, batch_vec,
-    toa) in enumerate(test_dataloader):
+    toa, att_feat) in enumerate(test_dataloader):
 
         X = X.reshape(-1, X.shape[2])
         img_feat = img_feat.reshape(-1, img_feat.shape[2])
@@ -107,7 +108,9 @@ def test_model(epoch, model, test_dataloader, fold):
         all_toa += [toa.item()]
 
         with torch.no_grad():
-            logits, probs = model(X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list,
+            # logits, probs = model(X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list,
+            #                       temporal_edge_w, batch_vec)
+            logits, probs = model(X, edge_index, img_feat, video_adj_list, att_feat, edge_embeddings, temporal_adj_list, 
                                   temporal_edge_w, batch_vec)
 
         pred_labels = probs.argmax(1)
@@ -184,7 +187,7 @@ def train(train_dataloader, test_dataloader, fold):
 
         for batch_i, (
         X, edge_index, y_true, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, obj_vis_feat, batch_vec,
-        toa) in enumerate(train_dataloader):
+        toa, att_feat) in enumerate(train_dataloader):
 
             # Processing the inputs from the dataloader
             X = X.reshape(-1, X.shape[2])
@@ -208,7 +211,9 @@ def train(train_dataloader, test_dataloader, fold):
                 device), temporal_edge_w.to(device), edge_embeddings.to(device), batch_vec.to(device)
 
             # Get predictions from the model
-            logits, probs = model(X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list,
+            # logits, probs = model(X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list,
+            #                       temporal_edge_w, batch_vec)
+            logits, probs = model(X, edge_index, img_feat, video_adj_list, att_feat, edge_embeddings, temporal_adj_list, 
                                   temporal_edge_w, batch_vec)
 
             # Exclude the actual accident frames from the training
@@ -278,6 +283,7 @@ if __name__ == "__main__":
         objmap_file=opt.obj_mapping_file,
         training=True,
         n_frames=opt.n_frames,
+        attention_path=opt.attention_path,
     )
 
     folds = opt.n_folds
