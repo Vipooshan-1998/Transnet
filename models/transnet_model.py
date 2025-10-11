@@ -531,13 +531,13 @@ class SpaceTempGoG_detr_dad(nn.Module):
         self.atten_fc = nn.Linear(atten_feat_dim, embedding_dim * 2)
 
         encoder_layer_img = TransformerEncoderLayer(
-            d_model=embedding_dim * 2, nhead=self.num_heads, batch_first=True
+            d_model=embedding_dim * 2, nhead=1, batch_first=True
         )
         encoder_layer_atten = TransformerEncoderLayer(
             d_model=embedding_dim * 2, nhead=self.num_heads, batch_first=True
         )
 
-        self.temporal_transformer_img = TransformerEncoder(encoder_layer_img, num_layers=2)
+        self.temporal_transformer_img = TransformerEncoder(encoder_layer_img, num_layers=1)
         self.temporal_transformer_atten = TransformerEncoder(encoder_layer_atten, num_layers=2)
 
         # -----------------------
