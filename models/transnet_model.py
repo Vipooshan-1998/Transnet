@@ -531,7 +531,7 @@ class SpaceTempGoG_detr_dad(nn.Module):
         self.atten_fc = nn.Linear(atten_feat_dim, embedding_dim * 2)
 
         encoder_layer_img = TransformerEncoderLayer(
-            d_model=embedding_dim * 2, nhead=2, batch_first=True
+            d_model=embedding_dim * 2, nhead=self.num_heads, batch_first=True
         )
         encoder_layer_atten = TransformerEncoderLayer(
             d_model=embedding_dim * 2, nhead=self.num_heads, batch_first=True
@@ -592,7 +592,12 @@ class SpaceTempGoG_detr_dad(nn.Module):
             tensor = torch.nan_to_num(tensor, nan=0.0, posinf=1e3, neginf=-1e3)
             tensor = torch.clamp(tensor, -1e3, 1e3)
             return tensor
-    
+
+        img_feat = torch.nan_to_num(img_feat, nan=0.0, posinf=1e6, neginf=-1e6)  # optional
+        min_val = img_feat.amin(dim=-1, keepdim=True)
+        max_val = img_feat.amax(dim=-1, keepdim=True)
+        img_feat = (img_feat - min_val) / (max_val - min_val + 1e-6)
+
         # -----------------------
         # Object graph processing
         # -----------------------
