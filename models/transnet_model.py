@@ -484,9 +484,9 @@ from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 
 
-class SpaceTempGoG_detr_dad(nn.Module):
+class Trasnet(nn.Module):
     def __init__(self, input_dim=2048, embedding_dim=128, img_feat_dim=2048, atten_feat_dim=2304, num_classes=2):
-        super(SpaceTempGoG_detr_dad, self).__init__()
+        super(Trasnet, self).__init__()
 
         self.num_heads = 4
         self.input_dim = input_dim
@@ -593,10 +593,10 @@ class SpaceTempGoG_detr_dad(nn.Module):
             tensor = torch.clamp(tensor, -1e3, 1e3)
             return tensor
 
-        img_feat = torch.nan_to_num(img_feat, nan=0.0, posinf=1e6, neginf=-1e6)  # optional
-        min_val = img_feat.amin(dim=-1, keepdim=True)
-        max_val = img_feat.amax(dim=-1, keepdim=True)
-        img_feat = (img_feat - min_val) / (max_val - min_val + 1e-6)
+        # img_feat = torch.nan_to_num(img_feat, nan=0.0, posinf=1e6, neginf=-1e6)  # optional
+        # min_val = img_feat.amin(dim=-1, keepdim=True)
+        # max_val = img_feat.amax(dim=-1, keepdim=True)
+        # img_feat = (img_feat - min_val) / (max_val - min_val + 1e-6)
 
         # -----------------------
         # Object graph processing
