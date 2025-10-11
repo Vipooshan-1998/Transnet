@@ -35,6 +35,7 @@ class CrossValDataset(Dataset):
 
         self.training = training
         self.img_dataset_path = img_dataset_path
+        self.attention_path = attention_path
         self.feature_paths = self._extract_feature_paths(dataset_path, split_path, training)
         self.transform = transforms.Compose([transforms.ToTensor(), ])
         # self.frame_batch_size = frame_batch_size
