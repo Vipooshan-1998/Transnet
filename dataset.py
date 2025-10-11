@@ -19,7 +19,7 @@ import spacy
 
 
 class CrossValDataset(Dataset):
-    def __init__(self, dataset_path, img_dataset_path, toas_files_path, split_path, ref_interval, objmap_file, training, n_frames):
+    def __init__(self, dataset_path, img_dataset_path, toas_files_path, split_path, ref_interval, objmap_file, training, n_frames, attention_path):
 
         """
         Input:
@@ -140,6 +140,16 @@ class CrossValDataset(Dataset):
                                             feature_path.split('/')[-1].split(".")[0] + '.npy')
         frame_stats = torch.from_numpy(np.load(frame_stats_file)).float()
 
+        # Attention
+        if curr_vid_label > 0:
+            att_file = os.path.join(self.attention_path, "positive",
+                                    feature_path.split('/')[-1].split(".")[0] + '.npy')
+        else:
+            att_file = os.path.join(self.attention_path, "negative",
+                                    feature_path.split('/')[-1].split(".")[0] + '.npy')
+
+        all_att_feat = self.transform(np.load(att_file)).squeeze(0)
+
         # Calculating the bbox centers
         cx, cy = (all_bbox[:, :, 0] + all_bbox[:, :, 2]) / 2, (all_bbox[:, :, 1] + all_bbox[:, :, 3]) / 2
         all_obj_centers = torch.cat((cx.unsqueeze(2), cy.unsqueeze(2)), 2).float()
@@ -252,7 +262,7 @@ class CrossValDataset(Dataset):
                 video_adj_list += [[i - j, i]]  # adding previous ref_interval neighbors
         video_adj_list = torch.Tensor(video_adj_list).permute((1, 0)).long()
 
-        return data.x, data.edge_index, data.y, all_img_feat, video_adj_list, edge_embeddings, temporal_adj_list, obj_vis_feat, num_objs_list, curr_toa
+        return data.x, data.edge_index, data.y, all_img_feat, video_adj_list, edge_embeddings, temporal_adj_list, obj_vis_feat, num_objs_list, curr_toa, all_att_feat
 
     def __len__(self):
         return len(self.feature_paths)
