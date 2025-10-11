@@ -580,7 +580,15 @@ class SpaceTempGoG_detr_dad(nn.Module):
         # -----------------------
         def sanitize(tensor, name):
             # if torch.isnan(tensor).any() or torch.isinf(tensor).any():
-                # print(f"[⚠️ Sanitizing {name}] min={tensor.min().item()}, max={tensor.max().item()}")
+            #     # print(f"[⚠️ Sanitizing {name}] min={tensor.min().item()}, max={tensor.max().item()}")
+            if torch.isnan(tensor).any() or torch.isinf(tensor).any():
+                valid_mask = torch.isfinite(tensor)
+                if valid_mask.any():  # Only compute if there are valid numbers
+                    finite_min = tensor[valid_mask].min().item()
+                    finite_max = tensor[valid_mask].max().item()
+                    print(f"[⚠️ Sanitizing {name}] finite_min={finite_min:.4f}, finite_max={finite_max:.4f}")
+                else:
+                    print(f"[⚠️ Sanitizing {name}] all values are NaN or Inf!")
             tensor = torch.nan_to_num(tensor, nan=0.0, posinf=1e3, neginf=-1e3)
             tensor = torch.clamp(tensor, -1e3, 1e3)
             return tensor
