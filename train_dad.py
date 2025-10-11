@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import time
 from eval_utils import evaluation
 
+torch.autograd.set_detect_anomaly(True)
 torch.manual_seed(0)   #3407
 
 parser = argparse.ArgumentParser()
@@ -279,6 +280,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
