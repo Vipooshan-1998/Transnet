@@ -652,7 +652,7 @@ class Trasnet(nn.Module):
         # I3D feature processing
         # -----------------------
         img_feat_proj = self.img_fc(img_feat)
-        # img_feat_proj = sanitize(img_feat_proj, "img_feat_proj")
+        img_feat_proj = sanitize(img_feat_proj, "img_feat_proj")
     
         img_feat_trans = self.temporal_transformer_img(img_feat_proj)
         img_feat_trans = sanitize(img_feat_trans, "img_feat_trans")
@@ -660,27 +660,27 @@ class Trasnet(nn.Module):
         img_feat_seq = img_feat_trans.unsqueeze(0)
         img_feat_seq, _ = self.temporal_lstm_img(img_feat_seq)
         lstm_out_img = img_feat_seq.squeeze(0)
-        # lstm_out_img = sanitize(lstm_out_img, "lstm_out_img")
+        lstm_out_img = sanitize(lstm_out_img, "lstm_out_img")
     
         # -----------------------
         # Attention SlowFast feature processing
         # -----------------------
         atten_feat_proj = self.atten_fc(atten_feat)
-        # atten_feat_proj = sanitize(atten_feat_proj, "atten_feat_proj")
+        atten_feat_proj = sanitize(atten_feat_proj, "atten_feat_proj")
     
         atten_feat_trans = self.temporal_transformer_atten(atten_feat_proj)
-        # atten_feat_trans = sanitize(atten_feat_trans, "atten_feat_trans")
+        atten_feat_trans = sanitize(atten_feat_trans, "atten_feat_trans")
     
         atten_feat_seq = atten_feat_trans.unsqueeze(0)
         atten_feat_seq, _ = self.temporal_lstm_atten(atten_feat_seq)
         lstm_out_atten = atten_feat_seq.squeeze(0)
-        # lstm_out_atten = sanitize(lstm_out_atten, "lstm_out_atten")
+        lstm_out_atten = sanitize(lstm_out_atten, "lstm_out_atten")
     
         # -----------------------
         # Concatenate all LSTM outputs
         # -----------------------
         fused_feat = torch.cat((lstm_out_graph, lstm_out_img, lstm_out_atten), dim=1)
-        # fused_feat = sanitize(fused_feat, "fused_feat before classification")
+        fused_feat = sanitize(fused_feat, "fused_feat before classification")
     
         # -----------------------
         # Classification
