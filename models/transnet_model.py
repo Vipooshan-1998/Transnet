@@ -847,7 +847,7 @@ class Trasnet(nn.Module):
         img_feat_proj = self.img_fc(img_feat)
         img_feat_proj = sanitize(img_feat_proj, "img_feat_proj")
 
-        img_feat_trans = self.temporal_transformer_img(img_feat_proj)
+        img_feat_trans = self.temporal_transformer_img(img_feat_proj, is_causal=True)
         img_feat_trans = sanitize(img_feat_trans, "img_feat_trans")
 
         img_feat_seq = img_feat_trans.unsqueeze(0)
