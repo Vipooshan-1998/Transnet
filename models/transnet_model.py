@@ -785,9 +785,8 @@ class Trasnet(nn.Module):
         self.relu = nn.LeakyReLU(0.2)
         self.softmax = nn.Softmax(dim=-1)
 
-    def forward(self, x, edge_index, img_feat,
-                video_adj_list, edge_embeddings,
-                temporal_adj_list, temporal_edge_w, batch_vec):
+    def forward(self, x, edge_index, img_feat, video_adj_list, atten_feat,
+                edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec):
 
         # -----------------------
         # Helper function
