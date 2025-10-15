@@ -697,7 +697,7 @@ from torch.nn import TransformerEncoder, TransformerEncoderLayer
     
 #         return logits_mc, probs_mc
 
-## Trans and 2 LSTM - CVPR
+## Trans and 2 LSTM - CVPR - DAD 72
 import torch
 import torch.nn as nn
 from torch_geometric.nn import (
@@ -870,7 +870,7 @@ class Trans_LSTM(nn.Module):
 
         return logits_mc, probs_mc
 
-
+# Same as above but the temporal object graph removed - DAD 70
 class Trans_LSTM_Sans_Obj_Temp_Graph(nn.Module):
     def __init__(self, input_dim=2048, embedding_dim=128, img_feat_dim=2048, num_classes=2):
         super(Trans_LSTM_Sans_Obj_Temp_Graph, self).__init__()
@@ -1016,7 +1016,7 @@ class Trans_LSTM_Sans_Obj_Temp_Graph(nn.Module):
 
         return logits_mc, probs_mc
 
-
+# same as above but transformer added for object graph
 class Trans_LSTM_Sans_Obj_Temp_Graph_Trans_Obj(nn.Module):
     def __init__(self, input_dim=2048, embedding_dim=128, img_feat_dim=2048, num_classes=2):
         super(Trans_LSTM_Sans_Obj_Temp_Graph_Trans_Obj, self).__init__()
