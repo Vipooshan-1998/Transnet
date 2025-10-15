@@ -1016,7 +1016,7 @@ class Trans_LSTM_Sans_Obj_Temp_Graph(nn.Module):
 
         return logits_mc, probs_mc
 
-# same as above but transformer added for object graph
+# same as above but transformer added for object graph - 53.53
 class Trans_LSTM_Sans_Obj_Temp_Graph_Trans_Obj(nn.Module):
     def __init__(self, input_dim=2048, embedding_dim=128, img_feat_dim=2048, num_classes=2):
         super(Trans_LSTM_Sans_Obj_Temp_Graph_Trans_Obj, self).__init__()
