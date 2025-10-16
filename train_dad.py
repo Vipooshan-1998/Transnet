@@ -270,6 +270,7 @@ def main():
 
 			# Compute hybrid CVPR-ready loss
 			c_loss1 = hybrid_loss_single(p_acc, label)
+			loss = loss + c_loss1
 
 			if (batch_i+1)%3 == 0:
 				optimizer.zero_grad()
@@ -323,6 +324,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
