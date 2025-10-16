@@ -267,8 +267,8 @@ def main():
 			p_acc = probs_mc[0, :toa, 1]  # per-frame accident probability before TOA
 			label = y[:toa]                # labels for frames before TOA
 
-# Compute hybrid CVPR-ready loss
-loss = hybrid_loss_single(p_acc, label)
+			# Compute hybrid CVPR-ready loss
+			loss = hybrid_loss_single(p_acc, label)
 
 			if (batch_i+1)%3 == 0:
 				optimizer.zero_grad()
@@ -319,6 +319,7 @@ loss = hybrid_loss_single(p_acc, label)
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
