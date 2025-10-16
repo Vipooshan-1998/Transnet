@@ -141,6 +141,38 @@ def test_model(epoch, model, test_dataloader):
 	model.train()
 	print("")
 
+# -----------------------
+# EACL / hybrid CVPR-ready loss
+# -----------------------
+def hybrid_loss_single(prob_seq, label, alpha=0.8, lambda_consistency=0.5, lambda_uncert=0.1):
+    """
+    prob_seq: (T,) probability of 'accident' per frame
+    label: scalar 0/1
+    """
+    T = prob_seq.shape[0]
+
+    # ----- 1. Time-weighted BCE -----
+    t = torch.arange(T, device=prob_seq.device, dtype=torch.float32)
+    weights = torch.exp(-alpha * t)
+    weights = weights / weights.sum()
+    
+    labels_t = label * torch.ones_like(prob_seq)
+    bce = F.binary_cross_entropy(prob_seq, labels_t, reduction='none')
+    weighted_bce = (bce * weights).sum()
+
+    # ----- 2. Temporal consistency -----
+    diff = prob_seq[1:] - prob_seq[:-1]
+    temporal_consistency = torch.mean(F.relu(-diff))
+
+    # ----- 3. Uncertainty regularization -----
+    entropy = -(prob_seq * torch.log(prob_seq + 1e-8) +
+                (1 - prob_seq) * torch.log(1 - prob_seq + 1e-8))
+    uncertainty_loss = entropy.mean()
+
+    # ----- Total loss -----
+    total_loss = weighted_bce + lambda_consistency * temporal_consistency + lambda_uncert * uncertainty_loss
+    return total_loss
+
 def main():
 
 	# Define training set
@@ -227,9 +259,16 @@ def main():
 			# logits, probs = model(X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
 			logits, probs = model(X, edge_index, img_feat, video_adj_list, att_feat, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
  
-			# Exclude the actual accident frames from the training
-			c_loss1 = cls_criterion(logits[:toa], y[:toa])    
-			loss = loss + c_loss1  
+			# # Exclude the actual accident frames from the training
+			# c_loss1 = cls_criterion(logits[:toa], y[:toa])    
+			# loss = loss + c_loss1  
+
+			# Only consider frames before accident
+			p_acc = probs_mc[0, :toa, 1]  # per-frame accident probability before TOA
+			label = y[:toa]                # labels for frames before TOA
+
+# Compute hybrid CVPR-ready loss
+loss = hybrid_loss_single(p_acc, label)
 
 			if (batch_i+1)%3 == 0:
 				optimizer.zero_grad()
@@ -280,6 +319,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
