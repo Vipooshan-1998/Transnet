@@ -144,23 +144,24 @@ def test_model(epoch, model, test_dataloader):
 # -----------------------
 # EACL / hybrid CVPR-ready loss
 # -----------------------
-def hybrid_loss_single(prob_seq, label, alpha=0.8, lambda_consistency=0.5, lambda_uncert=0.1):
+def hybrid_loss_single_logits(logits_seq, label, alpha=0.8, lambda_consistency=0.5, lambda_uncert=0.1):
     """
-    prob_seq: (T,) probability of 'accident' per frame
-    label: scalar 0/1
+    logits_seq: (T,) raw logits for 'accident'
+    label: (T,) 0/1
     """
-    T = prob_seq.shape[0]
+    T = logits_seq.shape[0]
 
     # ----- 1. Time-weighted BCE -----
-    t = torch.arange(T, device=prob_seq.device, dtype=torch.float32)
+    t = torch.arange(T, device=logits_seq.device, dtype=torch.float32)
     weights = torch.exp(-alpha * t)
     weights = weights / weights.sum()
-    
-    labels_t = label * torch.ones_like(prob_seq)
-    bce = F.binary_cross_entropy(prob_seq, labels_t, reduction='none')
+
+    labels_t = label.float()
+    bce = F.binary_cross_entropy_with_logits(logits_seq, labels_t, reduction='none')
     weighted_bce = (bce * weights).sum()
 
     # ----- 2. Temporal consistency -----
+    prob_seq = torch.sigmoid(logits_seq)
     diff = prob_seq[1:] - prob_seq[:-1]
     temporal_consistency = torch.mean(F.relu(-diff))
 
@@ -265,11 +266,13 @@ def main():
 
 			# Only consider frames before accident
 			# print("probs shape", probs.shape)
-			p_acc = probs[:toa, 1]  # per-frame accident probability before TOA
+			# p_acc = probs[:toa, 1]  # per-frame accident probability before TOA
+			logits_acc = logits[:toa, 1]
 			label = y[:toa]                # labels for frames before TOA
 
 			# Compute hybrid CVPR-ready loss
-			c_loss1 = hybrid_loss_single(p_acc, label)
+			# c_loss1 = hybrid_loss_single(p_acc, label)
+			c_loss1 = hybrid_loss_single_logits(logits_acc, label)
 			loss = loss + c_loss1
 
 			if (batch_i+1)%3 == 0:
@@ -324,6 +327,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
