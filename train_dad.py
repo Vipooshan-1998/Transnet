@@ -269,7 +269,7 @@ def main():
 			label = y[:toa]                # labels for frames before TOA
 
 			# Compute hybrid CVPR-ready loss
-			loss = hybrid_loss_single(p_acc, label)
+			c_loss1 = hybrid_loss_single(p_acc, label)
 
 			if (batch_i+1)%3 == 0:
 				optimizer.zero_grad()
@@ -284,7 +284,7 @@ def main():
 			# epoch_metrics["c1_loss"].append(c_loss1.item())
 
 			# Keep track of epoch metrics
-			epoch_metrics["c1_loss"].append(loss.item())  # replaced c_loss1 with hybrid loss
+			epoch_metrics["c1_loss"].append(c_loss1.item())  # replaced c_loss1 with hybrid loss
 	
 			if batch_i == 0: 
 				all_probs_vid2 = probs[:, 1].detach().cpu().unsqueeze(0)
@@ -323,6 +323,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
