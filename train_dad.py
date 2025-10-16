@@ -280,8 +280,11 @@ def main():
 			pred_labels = probs.argmax(1)
 			total_pred = (pred_labels == y).cpu().numpy().sum()
 	        
+			# # Keep track of epoch metrics
+			# epoch_metrics["c1_loss"].append(c_loss1.item())
+
 			# Keep track of epoch metrics
-			epoch_metrics["c1_loss"].append(c_loss1.item())
+			epoch_metrics["c1_loss"].append(loss.item())  # replaced c_loss1 with hybrid loss
 	
 			if batch_i == 0: 
 				all_probs_vid2 = probs[:, 1].detach().cpu().unsqueeze(0)
@@ -320,6 +323,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
