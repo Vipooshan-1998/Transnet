@@ -265,7 +265,7 @@ def main():
 
 			# Only consider frames before accident
 			print("probs shape", probs.shape)
-			p_acc = probs[0, :toa, 1]  # per-frame accident probability before TOA
+			p_acc = probs[:toa, 1]  # per-frame accident probability before TOA
 			label = y[:toa]                # labels for frames before TOA
 
 			# Compute hybrid CVPR-ready loss
@@ -320,6 +320,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
