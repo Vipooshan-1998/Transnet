@@ -264,7 +264,7 @@ def main():
 			# loss = loss + c_loss1  
 
 			# Only consider frames before accident
-			print("probs shape", probs.shape)
+			# print("probs shape", probs.shape)
 			p_acc = probs[:toa, 1]  # per-frame accident probability before TOA
 			label = y[:toa]                # labels for frames before TOA
 
@@ -324,6 +324,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
