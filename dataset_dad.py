@@ -170,7 +170,7 @@ class Dataset(Dataset):
   #                                   feature_path.split('/')[-1].split(".")[0][5:] + '-neg.npy')
 
         # all_att_feat = self.transform(np.load(att_file)).squeeze(0)
-		all_att_feat = []
+        all_att_feat = []
 
         # Calculating the bbox centers
         cx, cy = (all_bbox[:, :, 0] + all_bbox[:, :, 2]) / 2, (all_bbox[:, :, 1] + all_bbox[:, :, 3]) / 2
@@ -284,6 +284,7 @@ class Dataset(Dataset):
     def __len__(self):
         return len(self.feature_paths)
     
+
 
 
 
