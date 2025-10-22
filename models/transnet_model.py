@@ -1669,6 +1669,8 @@ class TransGated(nn.Module):
         return logits_mc, probs_mc
 
 
+from torch.nn import TransformerEncoder, TransformerEncoderLayer, TransformerDecoder, TransformerDecoderLayer
+
 class Trans_Encode_Deode(nn.Module):
     def __init__(self, input_dim=2048, embedding_dim=128, img_feat_dim=2048, num_classes=2, num_heads=4):
         super(Trans_Encode_Deode, self).__init__()
