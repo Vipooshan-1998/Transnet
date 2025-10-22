@@ -203,7 +203,7 @@ def main():
 	test_dataloader = DataLoader(test_dataset, batch_size=opt.test_video_batch_size, shuffle=False, num_workers=8)
 
 	# Define network
-	model =  LSTM_Only(input_dim=opt.input_dim, embedding_dim=opt.embedding_dim, img_feat_dim=opt.img_feat_dim, num_classes=opt.num_classes).to(device)
+	model =  Trans_LSTM_Sans_Img_LSTM(input_dim=opt.input_dim, embedding_dim=opt.embedding_dim, img_feat_dim=opt.img_feat_dim, num_classes=opt.num_classes).to(device)
 	print(model)
 	
 	model.train()
@@ -324,6 +324,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
