@@ -1810,6 +1810,8 @@ class Trans_Encode_Deode(nn.Module):
         img_feat_proj = self.img_fc(img_feat)
         img_feat_proj = sanitize(img_feat_proj, "img_feat_proj")
 
+        img_feat_proj = img_feat_proj.unsqueeze(1)
+
         encoder_out = self.img_encoder(img_feat_proj, is_causal=True)
         batch_size = encoder_out.size(0)
         # Repeat decoder query for batch
