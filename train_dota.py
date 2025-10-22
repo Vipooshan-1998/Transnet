@@ -18,29 +18,10 @@ import scipy.io as io
 import sklearn
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
-import torch
-import numpy as np
-from models import *
-from dataset_dota import *
-from torch.utils.data import DataLoader
 
 import argparse
 
-import torch.nn as nn
-import torch.nn.functional as F
-from torchvision.utils import save_image
 
-from torch.optim.lr_scheduler import MultiStepLR
-
-from torchmetrics.functional import pairwise_cosine_similarity
-import scipy.io as io
-
-import sklearn
-from sklearn.metrics import confusion_matrix
-import matplotlib.pyplot as plt
-
-import time
-from eval_utils import evaluation
 import time
 from eval_utils import evaluation
 
@@ -203,7 +184,7 @@ def main():
     test_dataloader = DataLoader(test_dataset, batch_size=opt.test_video_batch_size, shuffle=False, num_workers=8)
 
     # Define network
-    model = SpaceTempGoG_detr_dota(input_dim=opt.input_dim, embedding_dim=opt.embedding_dim,
+    model = Trans_LSTM(input_dim=opt.input_dim, embedding_dim=opt.embedding_dim,
                                   img_feat_dim=opt.img_feat_dim, num_classes=opt.num_classes).to(device)
     print(model)
 
