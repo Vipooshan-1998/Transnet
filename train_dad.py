@@ -141,38 +141,38 @@ def test_model(epoch, model, test_dataloader):
 	model.train()
 	print("")
 
-# -----------------------
-# EACL / hybrid CVPR-ready loss
-# -----------------------
-def hybrid_loss_single_logits(logits_seq, label, alpha=0.8, lambda_consistency=0.5, lambda_uncert=0.1):
-    """
-    logits_seq: (T,) raw logits for 'accident'
-    label: (T,) 0/1
-    """
-    T = logits_seq.shape[0]
+# # -----------------------
+# # EACL / hybrid CVPR-ready loss
+# # -----------------------
+# def hybrid_loss_single_logits(logits_seq, label, alpha=0.8, lambda_consistency=0.5, lambda_uncert=0.1):
+#     """
+#     logits_seq: (T,) raw logits for 'accident'
+#     label: (T,) 0/1
+#     """
+#     T = logits_seq.shape[0]
 
-    # ----- 1. Time-weighted BCE -----
-    t = torch.arange(T, device=logits_seq.device, dtype=torch.float32)
-    weights = torch.exp(-alpha * t)
-    weights = weights / weights.sum()
+#     # ----- 1. Time-weighted BCE -----
+#     t = torch.arange(T, device=logits_seq.device, dtype=torch.float32)
+#     weights = torch.exp(-alpha * t)
+#     weights = weights / weights.sum()
 
-    labels_t = label.float()
-    bce = F.binary_cross_entropy_with_logits(logits_seq, labels_t, reduction='none')
-    weighted_bce = (bce * weights).sum()
+#     labels_t = label.float()
+#     bce = F.binary_cross_entropy_with_logits(logits_seq, labels_t, reduction='none')
+#     weighted_bce = (bce * weights).sum()
 
-    # ----- 2. Temporal consistency -----
-    prob_seq = torch.sigmoid(logits_seq)
-    diff = prob_seq[1:] - prob_seq[:-1]
-    temporal_consistency = torch.mean(F.relu(-diff))
+#     # ----- 2. Temporal consistency -----
+#     prob_seq = torch.sigmoid(logits_seq)
+#     diff = prob_seq[1:] - prob_seq[:-1]
+#     temporal_consistency = torch.mean(F.relu(-diff))
 
-    # ----- 3. Uncertainty regularization -----
-    entropy = -(prob_seq * torch.log(prob_seq + 1e-8) +
-                (1 - prob_seq) * torch.log(1 - prob_seq + 1e-8))
-    uncertainty_loss = entropy.mean()
+#     # ----- 3. Uncertainty regularization -----
+#     entropy = -(prob_seq * torch.log(prob_seq + 1e-8) +
+#                 (1 - prob_seq) * torch.log(1 - prob_seq + 1e-8))
+#     uncertainty_loss = entropy.mean()
 
-    # ----- Total loss -----
-    total_loss = weighted_bce + lambda_consistency * temporal_consistency + lambda_uncert * uncertainty_loss
-    return total_loss
+#     # ----- Total loss -----
+#     total_loss = weighted_bce + lambda_consistency * temporal_consistency + lambda_uncert * uncertainty_loss
+#     return total_loss
 
 def main():
 
@@ -260,20 +260,20 @@ def main():
 			# logits, probs = model(X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
 			logits, probs = model(X, edge_index, img_feat, video_adj_list, att_feat, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
  
-			# # Exclude the actual accident frames from the training
-			# c_loss1 = cls_criterion(logits[:toa], y[:toa])    
-			# loss = loss + c_loss1  
+			# Exclude the actual accident frames from the training
+			c_loss1 = cls_criterion(logits[:toa], y[:toa])    
+			loss = loss + c_loss1  
 
-			# Only consider frames before accident
-			# print("probs shape", probs.shape)
-			# p_acc = probs[:toa, 1]  # per-frame accident probability before TOA
-			logits_acc = logits[:toa, 1]
-			label = y[:toa]                # labels for frames before TOA
+			# # Only consider frames before accident
+			# # print("probs shape", probs.shape)
+			# # p_acc = probs[:toa, 1]  # per-frame accident probability before TOA
+			# logits_acc = logits[:toa, 1]
+			# label = y[:toa]                # labels for frames before TOA
 
-			# Compute hybrid CVPR-ready loss
-			# c_loss1 = hybrid_loss_single(p_acc, label)
-			c_loss1 = hybrid_loss_single_logits(logits_acc, label)
-			loss = loss + c_loss1
+			# # Compute hybrid CVPR-ready loss
+			# # c_loss1 = hybrid_loss_single(p_acc, label)
+			# c_loss1 = hybrid_loss_single_logits(logits_acc, label)
+			# loss = loss + c_loss1
 
 			if (batch_i+1)%3 == 0:
 				optimizer.zero_grad()
@@ -284,11 +284,8 @@ def main():
 			pred_labels = probs.argmax(1)
 			total_pred = (pred_labels == y).cpu().numpy().sum()
 	        
-			# # Keep track of epoch metrics
-			# epoch_metrics["c1_loss"].append(c_loss1.item())
-
 			# Keep track of epoch metrics
-			epoch_metrics["c1_loss"].append(c_loss1.item())  # replaced c_loss1 with hybrid loss
+			epoch_metrics["c1_loss"].append(c_loss1.item())
 	
 			if batch_i == 0: 
 				all_probs_vid2 = probs[:, 1].detach().cpu().unsqueeze(0)
@@ -327,6 +324,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
