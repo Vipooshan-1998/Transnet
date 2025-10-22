@@ -1669,22 +1669,11 @@ class TransGated(nn.Module):
         return logits_mc, probs_mc
 
 
-import torch
-import torch.nn as nn
-from torch_geometric.nn import (
-    TransformerConv,
-    SAGPooling,
-    global_max_pool,
-    InstanceNorm
-)
-from torch.nn import TransformerEncoder, TransformerEncoderLayer
+class Trans_Encode_Deode(nn.Module):
+    def __init__(self, input_dim=2048, embedding_dim=128, img_feat_dim=2048, num_classes=2, num_heads=4):
+        super(Trans_Encode_Deode, self).__init__()
 
-
-class Trans_LSTM_Conv(nn.Module):
-    def __init__(self, input_dim=2048, embedding_dim=128, img_feat_dim=2048, num_classes=2):
-        super(Trans_LSTM_Conv, self).__init__()
-
-        self.num_heads = 4
+        self.num_heads = num_heads
         self.input_dim = input_dim
         self.embedding_dim = embedding_dim
 
@@ -1697,49 +1686,52 @@ class Trans_LSTM_Conv(nn.Module):
         self.obj_l_bn1 = nn.BatchNorm1d(embedding_dim // 2)
 
         # -----------------------
-        # Spatial and temporal graph transformers
+        # Graph Transformers
         # -----------------------
         self.gc1_spatial = TransformerConv(
             in_channels=embedding_dim * 2 + embedding_dim // 2,
             out_channels=embedding_dim // 2,
-            heads=self.num_heads,
+            heads=num_heads,
             edge_dim=1,
             beta=True
         )
-        self.gc1_norm1 = InstanceNorm(embedding_dim // 2 * self.num_heads)
+        self.gc1_norm1 = InstanceNorm(embedding_dim // 2 * num_heads)
 
         self.gc1_temporal = TransformerConv(
             in_channels=embedding_dim * 2 + embedding_dim // 2,
             out_channels=embedding_dim // 2,
-            heads=self.num_heads,
+            heads=num_heads,
             edge_dim=1,
             beta=True
         )
-        self.gc1_norm2 = InstanceNorm(embedding_dim // 2 * self.num_heads)
+        self.gc1_norm2 = InstanceNorm(embedding_dim // 2 * num_heads)
 
-        # Graph pooling
-        self.pool = SAGPooling(embedding_dim * self.num_heads, ratio=0.8)
+        self.pool = SAGPooling(embedding_dim * num_heads, ratio=0.8)
 
         # -----------------------
-        # I3D features -> Transformer + Conv1D Head
+        # I3D features -> Transformer Encoder + Decoder
         # -----------------------
         self.img_fc = nn.Linear(img_feat_dim, embedding_dim * 2)
 
         encoder_layer_img = TransformerEncoderLayer(
-            d_model=embedding_dim * 2, nhead=self.num_heads, batch_first=True
+            d_model=embedding_dim * 2, nhead=num_heads, batch_first=True
         )
-        self.temporal_transformer_img = TransformerEncoder(encoder_layer_img, num_layers=2)
+        self.img_encoder = TransformerEncoder(encoder_layer_img, num_layers=2)
 
-        # Conv1D Head (replaces temporal_lstm_img)
-        self.conv_head = nn.Conv1d(embedding_dim * 2, embedding_dim, kernel_size=3, padding=1)
-        self.conv_pool = nn.AdaptiveMaxPool1d(1)
+        decoder_layer_img = TransformerDecoderLayer(
+            d_model=embedding_dim * 2, nhead=num_heads, batch_first=True
+        )
+        self.img_decoder = TransformerDecoder(decoder_layer_img, num_layers=2)
+
+        # Learnable query for decoder
+        self.decoder_query = nn.Parameter(torch.randn(1, 1, embedding_dim * 2))
 
         # -----------------------
-        # LSTM over graph pooled features
+        # LSTM for graph features
         # -----------------------
         self.temporal_lstm_graph = nn.LSTM(
-            input_size=embedding_dim * self.num_heads,
-            hidden_size=embedding_dim * self.num_heads,
+            input_size=embedding_dim * num_heads,
+            hidden_size=embedding_dim * num_heads,
             num_layers=1,
             batch_first=True
         )
@@ -1747,7 +1739,7 @@ class Trans_LSTM_Conv(nn.Module):
         # -----------------------
         # Classification
         # -----------------------
-        concat_dim = embedding_dim * self.num_heads + embedding_dim
+        concat_dim = embedding_dim * num_heads + embedding_dim * 2
         self.classify_fc1 = nn.Linear(concat_dim, embedding_dim)
         self.classify_fc2 = nn.Linear(embedding_dim, num_classes)
 
@@ -1758,7 +1750,7 @@ class Trans_LSTM_Conv(nn.Module):
                 edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec):
 
         # -----------------------
-        # Helper: sanitize tensor
+        # Helper sanitization
         # -----------------------
         def sanitize(tensor, name):
             if torch.isnan(tensor).any() or torch.isinf(tensor).any():
@@ -1808,26 +1800,26 @@ class Trans_LSTM_Conv(nn.Module):
         # -----------------------
         g_embed_seq = g_embed.unsqueeze(0)
         g_embed_seq, _ = self.temporal_lstm_graph(g_embed_seq)
-        lstm_out_graph = g_embed_seq.squeeze(0)
+        graph_out = g_embed_seq.squeeze(0)
 
         # -----------------------
-        # I3D feature processing (Transformer + Conv1D)
+        # I3D feature processing: Encoder + Decoder
         # -----------------------
         img_feat_proj = self.img_fc(img_feat)
         img_feat_proj = sanitize(img_feat_proj, "img_feat_proj")
 
-        img_feat_trans = self.temporal_transformer_img(img_feat_proj, is_causal=True)
-        img_feat_trans = sanitize(img_feat_trans, "img_feat_trans")
-
-        # Conv1D Head
-        img_feat_conv = self.conv_head(img_feat_trans.transpose(1, 2))  # [B, C, T]
-        img_feat_pooled = self.conv_pool(img_feat_conv).squeeze(-1)      # [B, embedding_dim]
-        img_feat_pooled = sanitize(img_feat_pooled, "img_feat_pooled")
+        encoder_out = self.img_encoder(img_feat_proj, is_causal=True)
+        batch_size = encoder_out.size(0)
+        # Repeat decoder query for batch
+        decoder_query = self.decoder_query.repeat(batch_size, 1, 1)
+        decoder_out = self.img_decoder(tgt=decoder_query, memory=encoder_out)
+        img_out = decoder_out.squeeze(1)
+        img_out = sanitize(img_out, "img_out")
 
         # -----------------------
-        # Concatenate
+        # Concatenate graph + image features
         # -----------------------
-        fused_feat = torch.cat((lstm_out_graph, img_feat_pooled), dim=1)
+        fused_feat = torch.cat((graph_out, img_out), dim=1)
         fused_feat = sanitize(fused_feat, "fused_feat before classification")
 
         # -----------------------
@@ -1838,4 +1830,5 @@ class Trans_LSTM_Conv(nn.Module):
         probs_mc = self.softmax(logits_mc)
 
         return logits_mc, probs_mc
+
 
