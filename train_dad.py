@@ -259,7 +259,11 @@ def main():
 			# Get predictions from the model
 			# logits, probs = model(X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
 			logits, probs = model(X, edge_index, img_feat, video_adj_list, att_feat, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
- 
+
+			# draw architecture
+			input = (X, edge_index, img_feat, video_adj_list, att_feat, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
+			torch.onnx.export(model, input, "kaggle/working/trans_lstm.onnx")
+			
 			# Exclude the actual accident frames from the training
 			c_loss1 = cls_criterion(logits[:toa], y[:toa])    
 			loss = loss + c_loss1  
@@ -324,6 +328,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
