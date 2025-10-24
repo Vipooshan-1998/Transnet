@@ -18,7 +18,7 @@ import scipy.io as io
 import sklearn 
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
-# from torchviz import make_dot
+from torchviz import make_dot
 
 import time
 from eval_utils import evaluation
@@ -262,15 +262,10 @@ def main():
 			logits, probs = model(X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
 
 			# draw architecture
-			input = (X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
-			torch.onnx.export(
-			    model,
-			    input,
-			    "trans_lstm.onnx",
-			    opset_version=17,  # <-- higher version
-			    input_names=["x", "edge_index", "img_feat", "video_adj_list", "edge_embeddings", "temporal_adj_list", "temporal_edge_w", "batch_vec"],
-			    output_names=["logits", "probs"],
-			)
+			# Create graph
+			dot = make_dot(probs, params=dict(model.named_parameters()))
+			dot.format = 'png'
+			dot.render('trans_lstm_graph')
 						
 			# Exclude the actual accident frames from the training
 			c_loss1 = cls_criterion(logits[:toa], y[:toa])    
@@ -336,6 +331,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
