@@ -92,7 +92,7 @@ def test_model(epoch, model, test_dataloader):
         
 		with torch.no_grad():
 			# logits, probs = model(X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
-			logits, probs = model(X, edge_index, img_feat, video_adj_list, att_feat, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
+			logits, probs = model(X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
 
 		
 		pred_labels = probs.argmax(1)
@@ -259,7 +259,7 @@ def main():
 
 			# Get predictions from the model
 			# logits, probs = model(X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
-			logits, probs = model(X, edge_index, img_feat, video_adj_list, att_feat, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
+			logits, probs = model(X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
 
 			# draw architecture
 			input = (X, edge_index, img_feat, video_adj_list, att_feat, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
@@ -337,6 +337,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
