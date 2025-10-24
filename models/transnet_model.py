@@ -1,7 +1,7 @@
 # import torch
 # import torch.nn as nn
 # import torch.nn.functional as F
-# from torch_geometric.nn import TransformerConv, SAGPooling, global_max_pool, InstanceNorm
+from torch_geometric.nn import TransformerConv, TopKPooling, SAGPooling, global_max_pool, InstanceNorm
 # from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 # class SpaceTempGoG_detr_dad(nn.Module):
@@ -747,7 +747,8 @@ class Trans_LSTM(nn.Module):
         self.gc1_norm2 = InstanceNorm(embedding_dim // 2 * self.num_heads)
 
         # Graph pooling
-        self.pool = SAGPooling(embedding_dim * self.num_heads, ratio=0.8)
+        # self.pool = SAGPooling(embedding_dim * self.num_heads, ratio=0.8)
+        self.pool = TopKPooling(embedding_dim * self.num_heads, ratio=0.8)
 
         # -----------------------
         # I3D features -> Transformer
