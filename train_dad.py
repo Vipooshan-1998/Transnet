@@ -225,6 +225,7 @@ def main():
 
 	# Training process
 	ttc = 0
+	count = 0
 	for epoch in range(opt.num_epochs):
 
 		start = time.time()
@@ -263,9 +264,11 @@ def main():
 
 			# draw architecture
 			# Create graph
-			dot = make_dot(probs, params=dict(model.named_parameters()))
-			dot.format = 'png'
-			dot.render('trans_lstm_graph')
+			if count == 0:
+				dot = make_dot(probs, params=dict(model.named_parameters()))
+				dot.format = 'png'
+				dot.render('trans_lstm_graph')
+				count+=1
 						
 			# Exclude the actual accident frames from the training
 			c_loss1 = cls_criterion(logits[:toa], y[:toa])    
@@ -331,6 +334,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
