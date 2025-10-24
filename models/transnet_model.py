@@ -747,8 +747,8 @@ class Trans_LSTM(nn.Module):
         self.gc1_norm2 = InstanceNorm(embedding_dim // 2 * self.num_heads)
 
         # Graph pooling
-        # self.pool = SAGPooling(embedding_dim * self.num_heads, ratio=0.8)
-        self.pool = TopKPooling(embedding_dim * self.num_heads, ratio=0.8)
+        self.pool = SAGPooling(embedding_dim * self.num_heads, ratio=0.8)
+        # self.pool = TopKPooling(embedding_dim * self.num_heads, ratio=0.8)
 
         # -----------------------
         # I3D features -> Transformer
