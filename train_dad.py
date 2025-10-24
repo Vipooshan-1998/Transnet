@@ -276,13 +276,30 @@ def main():
 				# dot.format = 'png'
 				# dot.render('trans_lstm_graph')
 				# count+=1
-
-				# Build module-level graph
-				graph = hl.build_graph(model, (X, edge_index, img_feat, video_adj_list, edge_embeddings, 
-											   temporal_adj_list, temporal_edge_w, batch_vec))
-				graph.theme = hl.graph.THEMES["blue"].copy()  # Optional: nicer color theme
-				graph.save("/kaggle/working/trans_lstm_highlevel", format="png")
-				graph
+				
+				with torch.no_grad():
+				    X_detached = X.detach()
+				    edge_index_detached = edge_index.detach() if isinstance(edge_index, torch.Tensor) else edge_index
+				    img_feat_detached = img_feat.detach()
+				    edge_embeddings_detached = edge_embeddings.detach()
+				    temporal_edge_w_detached = temporal_edge_w.detach()
+				
+				    graph = hl.build_graph(model, (
+				        X_detached,
+				        edge_index_detached,
+				        img_feat_detached,
+				        video_adj_list,
+				        edge_embeddings_detached,
+				        temporal_adj_list,
+				        temporal_edge_w_detached,
+				        batch_vec
+				    ))
+					# # Build module-level graph
+					# graph = hl.build_graph(model, (X, edge_index, img_feat, video_adj_list, edge_embeddings, 
+					# 							   temporal_adj_list, temporal_edge_w, batch_vec))
+					graph.theme = hl.graph.THEMES["blue"].copy()  # Optional: nicer color theme
+					graph.save("/kaggle/working/trans_lstm_highlevel", format="png")
+					# graph
 						
 			# Exclude the actual accident frames from the training
 			c_loss1 = cls_criterion(logits[:toa], y[:toa])    
@@ -348,6 +365,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
