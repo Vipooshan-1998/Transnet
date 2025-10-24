@@ -265,14 +265,13 @@ def main():
 			input = (X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
 			torch.onnx.export(
 			    model,
-			    args=input,
-			    f="trans_lstm.onnx",
-			    # opset_version=17,              # ← try increasing this
-			    export_params=True,
-			    do_constant_folding=True,
-			    verbose=True
+			    input,
+			    "trans_lstm.onnx",
+			    opset_version=17,  # <-- higher version
+			    input_names=["x", "edge_index", "img_feat", "video_adj_list", "edge_embeddings", "temporal_adj_list", "temporal_edge_w", "batch_vec"],
+			    output_names=["logits", "probs"],
 			)
-			
+						
 			# Exclude the actual accident frames from the training
 			c_loss1 = cls_criterion(logits[:toa], y[:toa])    
 			loss = loss + c_loss1  
@@ -337,6 +336,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
