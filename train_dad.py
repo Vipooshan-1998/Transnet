@@ -204,7 +204,7 @@ def main():
 	test_dataloader = DataLoader(test_dataset, batch_size=opt.test_video_batch_size, shuffle=False, num_workers=8)
 
 	# Define network
-	model =  TransGated(input_dim=opt.input_dim, embedding_dim=opt.embedding_dim, img_feat_dim=opt.img_feat_dim, num_classes=opt.num_classes).to(device)
+	model =  Trans_LSTM(input_dim=opt.input_dim, embedding_dim=opt.embedding_dim, img_feat_dim=opt.img_feat_dim, num_classes=opt.num_classes).to(device)
 	print(model)
 	
 	model.train()
@@ -262,13 +262,16 @@ def main():
 			logits, probs = model(X, edge_index, img_feat, video_adj_list, att_feat, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
 
 			# draw architecture
-			# input = (X, edge_index, img_feat, video_adj_list, att_feat, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
-			# Create computational graph
-			dot = make_dot(probs, params=dict(model.named_parameters()))
-			
-			# Save diagram
-			dot.format = 'png'   # can also use 'pdf', 'svg'
-			dot.render('trans_lstm_arch')  
+			input = (X, edge_index, img_feat, video_adj_list, att_feat, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
+			torch.onnx.export(
+			    model,
+			    args=input,
+			    f="trans_lstm.onnx",
+			    opset_version=17,              # ← try increasing this
+			    export_params=True,
+			    do_constant_folding=True,
+			    verbose=True
+			)
 			
 			# Exclude the actual accident frames from the training
 			c_loss1 = cls_criterion(logits[:toa], y[:toa])    
@@ -334,6 +337,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
