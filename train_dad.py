@@ -18,7 +18,7 @@ import scipy.io as io
 import sklearn 
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
-from torchviz import make_dot
+# from torchviz import make_dot
 
 import time
 from eval_utils import evaluation
@@ -337,6 +337,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
