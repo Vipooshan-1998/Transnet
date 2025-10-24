@@ -272,10 +272,10 @@ def main():
 			# draw architecture
 			# Create graph
 			if count == 0:
-				dot = make_dot(probs, params=dict(model.named_parameters()))
-				dot.format = 'png'
-				dot.render('trans_lstm_graph')
-				count+=1
+				# dot = make_dot(probs, params=dict(model.named_parameters()))
+				# dot.format = 'png'
+				# dot.render('trans_lstm_graph')
+				# count+=1
 
 				# Build module-level graph
 				graph = hl.build_graph(model, (X, edge_index, img_feat, video_adj_list, edge_embeddings, 
@@ -348,6 +348,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
