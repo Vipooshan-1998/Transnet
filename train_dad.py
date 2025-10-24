@@ -262,7 +262,7 @@ def main():
 			logits, probs = model(X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
 
 			# draw architecture
-			input = (X, edge_index, img_feat, video_adj_list, att_feat, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
+			input = (X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
 			torch.onnx.export(
 			    model,
 			    args=input,
@@ -337,6 +337,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
