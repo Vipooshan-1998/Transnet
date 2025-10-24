@@ -262,7 +262,15 @@ def main():
 
 			# draw architecture
 			input = (X, edge_index, img_feat, video_adj_list, att_feat, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec)
-			torch.onnx.export(model, input, "kaggle/working/trans_lstm.onnx")
+			torch.onnx.export(
+			    model,
+			    args=input,
+			    f="trans_lstm.onnx",
+			    opset_version=17,              # ← try increasing this
+			    export_params=True,
+			    do_constant_folding=True,
+			    verbose=True
+			)
 			
 			# Exclude the actual accident frames from the training
 			c_loss1 = cls_criterion(logits[:toa], y[:toa])    
@@ -328,6 +336,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
