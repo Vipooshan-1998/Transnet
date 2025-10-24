@@ -276,6 +276,7 @@ def main():
 				                               edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec])
 				graph.theme = hl.graph.THEMES["blue"].copy()  # Optional: nicer color theme
 				graph.save("/kaggle/working/trans_lstm_highlevel", format="png")
+				graph
 						
 			# Exclude the actual accident frames from the training
 			c_loss1 = cls_criterion(logits[:toa], y[:toa])    
@@ -341,6 +342,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
