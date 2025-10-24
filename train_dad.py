@@ -272,7 +272,8 @@ def main():
 				count+=1
 
 				# Build module-level graph
-				graph = hl.build_graph(model, [X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec])
+				graph = hl.build_graph(model, (X, edge_index, img_feat, video_adj_list, edge_embeddings, 
+											   temporal_adj_list, temporal_edge_w, batch_vec))
 				graph.theme = hl.graph.THEMES["blue"].copy()  # Optional: nicer color theme
 				graph.save("/kaggle/working/trans_lstm_highlevel", format="png")
 				graph
@@ -341,6 +342,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
