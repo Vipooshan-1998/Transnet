@@ -19,6 +19,7 @@ import sklearn
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 from torchviz import make_dot
+import hiddenlayer as hl
 
 import time
 from eval_utils import evaluation
@@ -269,6 +270,12 @@ def main():
 				dot.format = 'png'
 				dot.render('trans_lstm_graph')
 				count+=1
+
+				# Build module-level graph
+				graph = hl.build_graph(model, [x, edge_index, img_feat, video_adj_list,
+				                               edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec])
+				graph.theme = hl.graph.THEMES["blue"].copy()  # Optional: nicer color theme
+				graph.save("/kaggle/working/trans_lstm_highlevel", format="png")
 						
 			# Exclude the actual accident frames from the training
 			c_loss1 = cls_criterion(logits[:toa], y[:toa])    
@@ -334,6 +341,7 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
 
 
 
