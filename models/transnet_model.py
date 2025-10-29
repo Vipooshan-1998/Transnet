@@ -2146,3 +2146,174 @@ class LSTM_Only(nn.Module):
 
         return logits_mc, probs_mc
 
+
+import torch
+import torch.nn as nn
+from torch_geometric.nn import TransformerConv, InstanceNorm, SAGPooling, global_max_pool
+
+class LSTM_Trans(nn.Module):
+    def __init__(self, input_dim=2048, embedding_dim=128, img_feat_dim=2048, num_classes=2):
+        super(LSTM_Trans, self).__init__()
+
+        self.num_heads = 4
+        self.input_dim = input_dim
+        self.embedding_dim = embedding_dim
+
+        # -----------------------
+        # Object graph features
+        # -----------------------
+        self.x_fc = nn.Linear(self.input_dim, embedding_dim * 2)
+        self.x_bn1 = nn.BatchNorm1d(embedding_dim * 2)
+        self.obj_l_fc = nn.Linear(300, embedding_dim // 2)
+        self.obj_l_bn1 = nn.BatchNorm1d(embedding_dim // 2)
+
+        # -----------------------
+        # Spatial and temporal graph transformers
+        # -----------------------
+        self.gc1_spatial = TransformerConv(
+            in_channels=embedding_dim * 2 + embedding_dim // 2,
+            out_channels=embedding_dim // 2,
+            heads=self.num_heads,
+            edge_dim=1,
+            beta=True
+        )
+        self.gc1_norm1 = InstanceNorm(embedding_dim // 2 * self.num_heads)
+
+        self.gc1_temporal = TransformerConv(
+            in_channels=embedding_dim * 2 + embedding_dim // 2,
+            out_channels=embedding_dim // 2,
+            heads=self.num_heads,
+            edge_dim=1,
+            beta=True
+        )
+        self.gc1_norm2 = InstanceNorm(embedding_dim // 2 * self.num_heads)
+
+        # Graph pooling
+        self.pool = SAGPooling(embedding_dim * self.num_heads, ratio=0.8)
+
+        # -----------------------
+        # I3D features -> LSTM -> Transformer
+        # -----------------------
+        self.img_fc = nn.Linear(img_feat_dim, embedding_dim * 2)
+
+        # LSTM first
+        self.temporal_lstm_img = nn.LSTM(
+            input_size=embedding_dim * 2,
+            hidden_size=embedding_dim * 2,
+            num_layers=1,
+            batch_first=True
+        )
+
+        # Transformer after LSTM
+        encoder_layer_img = nn.TransformerEncoderLayer(
+            d_model=embedding_dim * 2, nhead=self.num_heads, batch_first=True
+        )
+        self.temporal_transformer_img = nn.TransformerEncoder(encoder_layer_img, num_layers=2)
+
+        # -----------------------
+        # Graph LSTM
+        # -----------------------
+        self.temporal_lstm_graph = nn.LSTM(
+            input_size=embedding_dim * self.num_heads,
+            hidden_size=embedding_dim * self.num_heads,
+            num_layers=1,
+            batch_first=True
+        )
+
+        # -----------------------
+        # Classification
+        # -----------------------
+        concat_dim = embedding_dim * self.num_heads + embedding_dim * 2
+        self.classify_fc1 = nn.Linear(concat_dim, embedding_dim)
+        self.classify_fc2 = nn.Linear(embedding_dim, num_classes)
+
+        self.relu = nn.LeakyReLU(0.2)
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self, x, edge_index, img_feat, video_adj_list,
+                edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec):
+
+        # -----------------------
+        # Helper function
+        # -----------------------
+        def sanitize(tensor, name):
+            if torch.isnan(tensor).any() or torch.isinf(tensor).any():
+                valid_mask = torch.isfinite(tensor)
+                if valid_mask.any():
+                    finite_min = tensor[valid_mask].min().item()
+                    finite_max = tensor[valid_mask].max().item()
+                    print(f"[⚠️ Sanitizing {name}] finite_min={finite_min:.4f}, finite_max={finite_max:.4f}")
+                else:
+                    print(f"[⚠️ Sanitizing {name}] all values are NaN or Inf!")
+            tensor = torch.nan_to_num(tensor, nan=0.0, posinf=1e3, neginf=-1e3)
+            tensor = torch.clamp(tensor, -1e3, 1e3)
+            return tensor
+
+        # -----------------------
+        # Object graph processing
+        # -----------------------
+        x_feat = self.relu(self.x_bn1(self.x_fc(x[:, :self.input_dim])))
+        x_label = self.relu(self.obj_l_bn1(self.obj_l_fc(x[:, self.input_dim:])))
+        x = torch.cat((x_feat, x_label), 1)
+
+        # -----------------------
+        # Spatial graph
+        # -----------------------
+        edge_attr_spatial = edge_embeddings[:, -1].unsqueeze(1).to(x)
+        n_embed_spatial = self.relu(self.gc1_norm1(
+            self.gc1_spatial(x, edge_index, edge_attr=edge_attr_spatial)
+        ))
+
+        # -----------------------
+        # Temporal graph
+        # -----------------------
+        edge_attr_temporal = temporal_edge_w.unsqueeze(1).to(x)
+        n_embed_temporal = self.relu(self.gc1_norm2(
+            self.gc1_temporal(x, temporal_adj_list, edge_attr=edge_attr_temporal)
+        ))
+
+        # -----------------------
+        # Concat + pooling
+        # -----------------------
+        n_embed = torch.cat((n_embed_spatial, n_embed_temporal), 1)
+        n_embed, edge_index, _, batch_vec, _, _ = self.pool(n_embed, edge_index, None, batch_vec)
+        g_embed = global_max_pool(n_embed, batch_vec)
+
+        # -----------------------
+        # LSTM over graph pooled features
+        # -----------------------
+        g_embed_seq = g_embed.unsqueeze(0)
+        g_embed_seq, _ = self.temporal_lstm_graph(g_embed_seq)
+        lstm_out_graph = g_embed_seq.squeeze(0)
+
+        # -----------------------
+        # I3D feature processing (LSTM → Transformer)
+        # -----------------------
+        img_feat_proj = self.img_fc(img_feat)
+        img_feat_proj = sanitize(img_feat_proj, "img_feat_proj")
+
+        # Apply LSTM first
+        img_feat_seq = img_feat_proj.unsqueeze(0)
+        img_feat_seq, _ = self.temporal_lstm_img(img_feat_seq)
+        lstm_out_img = img_feat_seq.squeeze(0)
+        lstm_out_img = sanitize(lstm_out_img, "lstm_out_img")
+
+        # Then Transformer
+        img_feat_trans = self.temporal_transformer_img(lstm_out_img, is_causal=True)
+        img_feat_trans = sanitize(img_feat_trans, "img_feat_trans")
+
+        # -----------------------
+        # Concatenate all LSTM outputs
+        # -----------------------
+        fused_feat = torch.cat((lstm_out_graph, img_feat_trans), dim=1)
+        fused_feat = sanitize(fused_feat, "fused_feat before classification")
+
+        # -----------------------
+        # Classification
+        # -----------------------
+        fused_feat = self.relu(self.classify_fc1(fused_feat))
+        logits_mc = self.classify_fc2(fused_feat)
+        probs_mc = self.softmax(logits_mc)
+
+        return logits_mc, probs_mc
+
