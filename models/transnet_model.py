@@ -1979,13 +1979,13 @@ class Trans_LSTM_Sans_Img_LSTM(nn.Module):
         img_feat_proj = self.img_fc(img_feat)
         img_feat_proj = sanitize(img_feat_proj, "img_feat_proj")
 
-        img_feat_trans = img_feat_proj.unsqueeze(0)
+        # img_feat_trans = img_feat_proj.unsqueeze(0)
         img_feat_trans = self.temporal_transformer_img(img_feat_trans, is_causal=True)
         img_feat_trans = sanitize(img_feat_trans, "img_feat_trans")
 
         # Directly use transformer output (squeeze batch dimension if needed)
-        img_feat_trans = img_feat_trans.squeeze(0)
-        img_feat_trans = sanitize(img_feat_trans, "img_feat_final")
+        # img_feat_trans = img_feat_trans.squeeze(0)
+        # img_feat_trans = sanitize(img_feat_trans, "img_feat_final")
 
         # -----------------------
         # Concatenate graph and image features
