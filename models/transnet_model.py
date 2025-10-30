@@ -2299,6 +2299,7 @@ class LSTM_Trans(nn.Module):
         lstm_out_img = sanitize(lstm_out_img, "lstm_out_img")
 
         # Then Transformer
+        print("lstm_out_img shape: ", lstm_out_img.shape)
         img_feat_trans = self.temporal_transformer_img(lstm_out_img, is_causal=True)
         img_feat_trans = sanitize(img_feat_trans, "img_feat_trans")
 
