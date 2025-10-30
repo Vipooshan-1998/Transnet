@@ -848,23 +848,23 @@ class Trans_LSTM(nn.Module):
         img_feat_proj = self.img_fc(img_feat)
         img_feat_proj = sanitize(img_feat_proj, "img_feat_proj")
 
-        # img_feat_trans = self.temporal_transformer_img(img_feat_proj, is_causal=True)
-        # img_feat_trans = sanitize(img_feat_trans, "img_feat_trans")
-
-        # img_feat_seq = img_feat_trans.unsqueeze(0)
-        # img_feat_seq, _ = self.temporal_lstm_img(img_feat_seq)
-        # lstm_out_img = img_feat_seq.squeeze(0)
-        # lstm_out_img = sanitize(lstm_out_img, "lstm_out_img")
-
-        # Add batch dimension for Transformer
-        img_feat_proj = img_feat_proj.unsqueeze(0)                       # [1, seq_len, embed_dim]
         img_feat_trans = self.temporal_transformer_img(img_feat_proj, is_causal=True)
         img_feat_trans = sanitize(img_feat_trans, "img_feat_trans")
+
+        img_feat_seq = img_feat_trans.unsqueeze(0)
+        img_feat_seq, _ = self.temporal_lstm_img(img_feat_seq)
+        lstm_out_img = img_feat_seq.squeeze(0)
+        lstm_out_img = sanitize(lstm_out_img, "lstm_out_img")
+
+        # # Add batch dimension for Transformer
+        # img_feat_proj = img_feat_proj.unsqueeze(0)                       # [1, seq_len, embed_dim]
+        # img_feat_trans = self.temporal_transformer_img(img_feat_proj, is_causal=True)
+        # img_feat_trans = sanitize(img_feat_trans, "img_feat_trans")
         
-        # Apply LSTM next
-        img_feat_seq, _ = self.temporal_lstm_img(img_feat_trans)          # [1, seq_len, embed_dim]
-        lstm_out_img = img_feat_seq.squeeze(0)                            # [seq_len, embed_dim]
-        lstm_out_img = sanitize(lstm_out_img, "lstm_out_img")       
+        # # Apply LSTM next
+        # img_feat_seq, _ = self.temporal_lstm_img(img_feat_trans)          # [1, seq_len, embed_dim]
+        # lstm_out_img = img_feat_seq.squeeze(0)                            # [seq_len, embed_dim]
+        # lstm_out_img = sanitize(lstm_out_img, "lstm_out_img")       
 
         # -----------------------
         # Concatenate all LSTM outputs
