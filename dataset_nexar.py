@@ -105,7 +105,7 @@ class Dataset(Dataset):
         get toa from toas directory
         """
 
-        toa_dir = self.frame_stats_path[:-12] + 'toa'
+        toa_dir = self.frame_stats_path[:-12] + 'toas'
         toa_file = os.path.join(toa_dir, video_name+'.txt')
 
         with open(toa_file) as f:
