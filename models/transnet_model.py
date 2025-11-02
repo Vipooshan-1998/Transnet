@@ -1,7 +1,7 @@
 # import torch
 # import torch.nn as nn
 # import torch.nn.functional as F
-from torch_geometric.nn import TransformerConv, GCNConv, TopKPooling, SAGPooling, global_max_pool, InstanceNorm
+from torch_geometric.nn import TransformerConv, GCNConv,  GATv2Conv, TopKPooling, SAGPooling, global_max_pool, InstanceNorm
 # from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 # class SpaceTempGoG_detr_dad(nn.Module):
