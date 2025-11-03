@@ -134,6 +134,16 @@ def test_model(epoch, model, test_dataloader):
     class_recall = cf.diagonal() / cf.sum(axis=1)
     print(np.round(class_recall, 3))
 
+    # Convert your lists/tensors to NumPy arrays
+    file_names_array = np.array(file_names_list)       # shape: (num_videos,)
+    probs_array = all_probs_vid2.numpy()               # shape: (num_videos, 1) or (num_videos,)
+
+    # Save as a compressed npz file
+    print("probs_and_filenames.npz is saveed..")
+    np.savez_compressed("probs_and_filenames.npz", 
+                        file_names=file_names_array, 
+                        probs=probs_array)
+
     if bool(opt.test_only):
         exit(0)
 
@@ -147,16 +157,7 @@ def test_model(epoch, model, test_dataloader):
     print("Best Frame avg precision: %.2f%%" % (best_ap))
     print("Best Frame avg precision's mTTA: %.2f%%" % (best_ap_mtta))
 
-    # Convert your lists/tensors to NumPy arrays
-    file_names_array = np.array(file_names_list)       # shape: (num_videos,)
-    probs_array = all_probs_vid2.numpy()               # shape: (num_videos, 1) or (num_videos,)
 
-    # Save as a compressed npz file
-    print("probs_and_filenames.npz is saveed..")
-    np.savez_compressed("probs_and_filenames.npz", 
-                        file_names=file_names_array, 
-                        probs=probs_array)
-  
     # Saving checkpoint
     # if avg_prec > best_ap:
     #     best_ap = avg_prec
