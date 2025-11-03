@@ -21,7 +21,7 @@ import spacy
 # Configure logging
 # logging.basicConfig(level=logging.INFO)  # Set log level
 
-start_frame = 150 - 45
+# start_frame = 150 - 45
 
 class Dataset(Dataset):
     def __init__(self, dataset_path, img_dataset_path, split_path, ref_interval, objmap_file, training):
@@ -48,7 +48,7 @@ class Dataset(Dataset):
         self.dilation_factor = 1
         self.topk = 10
         self.frame_stats_path = dataset_path[:-8] + 'frames_stats'  # (height, width)
-        self.n_frames = 50
+        self.n_frames = 150
 
         # Obj label to word embeddings
         self.idx_to_classes_obj = json.load(open(objmap_file))
@@ -126,8 +126,8 @@ class Dataset(Dataset):
         all_bbox = torch.from_numpy(
             all_data['det']).float()  # (x1, y1, x2, y2, cls, accident/no acc)bottom left and top right coordinates
 
-        all_feat = all_feat[start_frame:, :, :]
-        all_bbox = all_bbox[start_frame:, :, :]
+        # all_feat = all_feat[start_frame:, :, :]
+        # all_bbox = all_bbox[start_frame:, :, :]
         
         # curr_vid_label = int(all_data['labels'][1])
         if "neg" in feature_path.split('/')[-1]:
