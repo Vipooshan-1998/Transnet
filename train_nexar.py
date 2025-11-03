@@ -152,7 +152,8 @@ def test_model(epoch, model, test_dataloader):
     probs_array = all_probs_vid2.numpy()               # shape: (num_videos, 1) or (num_videos,)
 
     # Save as a compressed npz file
-    np.savez_compressed("/kaggle/working/probs_and_filenames.npz", 
+    print("probs_and_filenames.npz is saveed..")
+    np.savez_compressed("probs_and_filenames.npz", 
                         file_names=file_names_array, 
                         probs=probs_array)
   
