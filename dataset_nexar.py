@@ -48,7 +48,7 @@ class Dataset(Dataset):
         self.dilation_factor = 1
         self.topk = 10
         self.frame_stats_path = dataset_path[:-8] + 'frames_stats'  # (height, width)
-        self.n_frames = 150
+        self.n_frames = 50                          # 150
         self.start_frame = 150 - 45
 
         # Obj label to word embeddings
@@ -137,8 +137,8 @@ class Dataset(Dataset):
             curr_vid_label = 1
             
         if curr_vid_label > 0:
-            # curr_toa = self.get_toa_all(video_name)
-            curr_toa = 45
+            curr_toa = self.get_toa_all(video_name)
+            # curr_toa = 45
         else:
             curr_toa = self.n_frames + 1
 
