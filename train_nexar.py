@@ -138,11 +138,6 @@ def test_model(epoch, model, test_dataloader):
     file_names_array = np.array(file_names_list)       # shape: (num_videos,)
     probs_array = all_probs_vid2.numpy()               # shape: (num_videos, 1) or (num_videos,)
 
-    # Save as a compressed npz file
-    print("probs_and_filenames.npz is saveed..")
-    np.savez_compressed("probs_and_filenames.npz", 
-                        file_names=file_names_array, 
-                        probs=probs_array)
 
     if bool(opt.test_only):
         exit(0)
@@ -154,6 +149,13 @@ def test_model(epoch, model, test_dataloader):
         os.makedirs("model_checkpoints/dota", exist_ok=True)
         torch.save(model.state_dict(), f"model_checkpoints/dota/{model.__class__.__name__}_{epoch}.pth")
         print(f"Saved the model checkpoint - model_checkpoints/dota/{model.__class__.__name__}_{epoch}.pth")
+
+        # Save as a compressed npz file
+        print("probs_and_filenames.npz is saveed..")
+        np.savez_compressed(f"probs_and_filenames_{epoch}.npz", 
+                            file_names=file_names_array, 
+                            probs=probs_array)
+
     print("Best Frame avg precision: %.2f%%" % (best_ap))
     print("Best Frame avg precision's mTTA: %.2f%%" % (best_ap_mtta))
 
