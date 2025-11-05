@@ -48,8 +48,8 @@ class Dataset(Dataset):
         self.dilation_factor = 1
         self.topk = 10
         self.frame_stats_path = dataset_path[:-8] + 'frames_stats'  # (height, width)
-        self.n_frames = 15                     # 150
-        self.start_frame = 35
+        self.n_frames = 45                     # 150
+        self.start_frame = 150 - 45
 
         # Obj label to word embeddings
         self.idx_to_classes_obj = json.load(open(objmap_file))
