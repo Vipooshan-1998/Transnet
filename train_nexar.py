@@ -274,6 +274,7 @@ def main():
             epoch_metrics["c1_loss"].append(c_loss1.item())
 
             if batch_i == 0:
+                print("Shape of The img_feat: ", img_feat.shape)
                 all_probs_vid2 = probs[:, 1].detach().cpu().unsqueeze(0)
                 all_y_vid = torch.max(y).unsqueeze(0).cpu()  # y.cpu() #.unsqueeze(0)
             else:
