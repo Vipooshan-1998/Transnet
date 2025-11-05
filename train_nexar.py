@@ -157,7 +157,7 @@ def test_model(epoch, model, test_dataloader):
                             probs=probs_array)
 
     print("Best Frame avg precision: %.2f%%" % (best_ap))
-    print("Best Frame avg precision's mTTA: %.2f%%" % (best_ap_mtta))
+    print("Best Frame avg precision's mTTA: %.2f%%" (best_ap_mtta))
 
 
     # Saving checkpoint
