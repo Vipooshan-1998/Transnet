@@ -176,8 +176,8 @@ def test_model(epoch, model, test_dataloader, fold):
 
 def train(train_dataloader, test_dataloader, fold):
 
-    # Define network         # Trans_LSTM
-    model = Trans_LSTM_Sans_Img_LSTM(input_dim=opt.input_dim, embedding_dim=opt.embedding_dim,
+    # Define network         # Trans_LSTM      Trans_LSTM_Sans_Img_LSTM
+    model = Trans_LSTM(input_dim=opt.input_dim, embedding_dim=opt.embedding_dim,
                                   img_feat_dim=opt.img_feat_dim, num_classes=opt.num_classes).to(device)
     print(model)
 
