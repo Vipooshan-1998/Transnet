@@ -140,6 +140,12 @@ def test_model(epoch, model, test_dataloader):
 
 
     if bool(opt.test_only):
+        # Save as a compressed npz file
+        print("probs_and_filenames.npz is saveed..")
+        np.savez_compressed(f"probs_and_filenames_{epoch}.npz", 
+                            file_names=file_names_array, 
+                            probs=probs_array)
+
         exit(0)
 
     # # Saving checkpoint
