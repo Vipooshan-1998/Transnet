@@ -714,6 +714,7 @@ class Trans_LSTM(nn.Module):
         super(Trans_LSTM, self).__init__()
 
         self.num_heads = 4
+		self.graph_heads = 1
         self.input_dim = input_dim
         self.embedding_dim = embedding_dim
 
@@ -731,23 +732,23 @@ class Trans_LSTM(nn.Module):
         self.gc1_spatial = TransformerConv(
             in_channels=embedding_dim * 2 + embedding_dim // 2,
             out_channels=embedding_dim // 2,
-            heads=self.num_heads,
+            heads=self.graph_heads,
             edge_dim=1,
             beta=True
         )
-        self.gc1_norm1 = InstanceNorm(embedding_dim // 2 * self.num_heads)
+        self.gc1_norm1 = InstanceNorm(embedding_dim // 2 * self.graph_heads)
 
         self.gc1_temporal = TransformerConv(
             in_channels=embedding_dim * 2 + embedding_dim // 2,
             out_channels=embedding_dim // 2,
-            heads=self.num_heads,
+            heads=self.graph_heads,
             edge_dim=1,
             beta=True
         )
-        self.gc1_norm2 = InstanceNorm(embedding_dim // 2 * self.num_heads)
+        self.gc1_norm2 = InstanceNorm(embedding_dim // 2 * self.graph_heads)
 
         # Graph pooling
-        self.pool = SAGPooling(embedding_dim * self.num_heads, ratio=0.8)
+        self.pool = SAGPooling(embedding_dim * self.graph_heads, ratio=0.8)
         # self.pool = TopKPooling(embedding_dim * self.num_heads, ratio=0.8)
 
         # -----------------------
@@ -764,8 +765,8 @@ class Trans_LSTM(nn.Module):
         # LSTMs (num_layers=1, hidden_size = input_size)
         # -----------------------
         self.temporal_lstm_graph = nn.LSTM(
-            input_size=embedding_dim * self.num_heads,
-            hidden_size=embedding_dim * self.num_heads,
+            input_size=embedding_dim * self.graph_heads,
+            hidden_size=embedding_dim * self.graph_heads,
             num_layers=1,
             batch_first=True
         )
@@ -779,7 +780,7 @@ class Trans_LSTM(nn.Module):
         # -----------------------
         # Classification
         # -----------------------
-        concat_dim = embedding_dim * self.num_heads + embedding_dim * 2
+        concat_dim = embedding_dim * self.graph_heads + embedding_dim * 2
         self.classify_fc1 = nn.Linear(concat_dim, embedding_dim)
         self.classify_fc2 = nn.Linear(embedding_dim, num_classes)
 
