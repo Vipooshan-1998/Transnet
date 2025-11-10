@@ -71,12 +71,14 @@ def test_model(epoch, model, test_dataloader):
     print("")
     model.eval()
     total_correct, total, all_toa = 0, 0, []
+    file_names_list = []
 
     for batch_i, (
     X, edge_index, y_true, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, obj_vis_feat, batch_vec,
     toa, file_name) in enumerate(test_dataloader):
         # print("file_name in order: ", file_name)
         # print(file_name[0])
+        file_names_list.append(file_name[0])
         X = X.reshape(-1, X.shape[2])
         img_feat = img_feat.reshape(-1, img_feat.shape[2])
         edge_index = edge_index.reshape(-1, edge_index.shape[2])
@@ -132,7 +134,18 @@ def test_model(epoch, model, test_dataloader):
     class_recall = cf.diagonal() / cf.sum(axis=1)
     print(np.round(class_recall, 3))
 
+    # Convert your lists/tensors to NumPy arrays
+    file_names_array = np.array(file_names_list)       # shape: (num_videos,)
+    probs_array = all_probs_vid2.numpy()               # shape: (num_videos, 1) or (num_videos,)
+
+
     if bool(opt.test_only):
+        # Save as a compressed npz file
+        print("probs_and_filenames.npz is saveed..")
+        np.savez_compressed(f"probs_and_filenames.npz", 
+                            file_names=file_names_array, 
+                            probs=probs_array)
+
         exit(0)
 
     # # Saving checkpoint
