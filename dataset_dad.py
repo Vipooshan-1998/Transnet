@@ -146,7 +146,7 @@ class Dataset(Dataset):
         # all_img_feat = self.transform(np.load(img_file)).squeeze(0)
 
         # Use VGG16 Features From 0th Index 
-        all_img_feat = self.transform(all_data['data'][:, 0, :]).squeeze(0)
+        all_img_feat = self.transform(all_data['data'][:, 0, :].astype(np.float32)).squeeze(0)
 
         # Reading frame stats file
         if curr_vid_label > 0:
@@ -286,6 +286,7 @@ class Dataset(Dataset):
     def __len__(self):
         return len(self.feature_paths)
     
+
 
 
 
