@@ -171,7 +171,7 @@ class Dataset(Dataset):
 
         # all_att_feat = self.transform(np.load(att_file)).squeeze(0)
         # Use VGG16 Features From 0th Index 
-        all_att_feat = self.transform(all_data['data'][:, 0:, :]).squeeze(0)
+        all_att_feat = self.transform(all_data['data'][:, 0, :]).squeeze(0)
 
         # Calculating the bbox centers
         cx, cy = (all_bbox[:, :, 0] + all_bbox[:, :, 2]) / 2, (all_bbox[:, :, 1] + all_bbox[:, :, 3]) / 2
@@ -285,6 +285,7 @@ class Dataset(Dataset):
     def __len__(self):
         return len(self.feature_paths)
     
+
 
 
 
