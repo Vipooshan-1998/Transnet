@@ -170,7 +170,7 @@ class Dataset(Dataset):
                                     feature_path.split('/')[-1].split(".")[0][5:] + '-neg.npy')
 
         # all_att_feat = self.transform(np.load(att_file)).squeeze(0)
-        # Use VGG16 Features From 0th Index
+        # Use VGG16 Features From 0th Index 
         all_att_feat = self.transform(torch.from_numpy(all_data['data'])[:, 0:, :]).squeeze(0)
 
         # Calculating the bbox centers
@@ -285,6 +285,7 @@ class Dataset(Dataset):
     def __len__(self):
         return len(self.feature_paths)
     
+
 
 
 
