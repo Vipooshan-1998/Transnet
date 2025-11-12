@@ -715,6 +715,7 @@ class Trans_LSTM(nn.Module):
 
         self.num_heads = 4
         self.graph_heads = 1
+        self.encoder_layers = 1
         self.input_dim = input_dim
         self.embedding_dim = embedding_dim
 
@@ -759,7 +760,7 @@ class Trans_LSTM(nn.Module):
         encoder_layer_img = TransformerEncoderLayer(
             d_model=embedding_dim * 2, nhead=self.num_heads, batch_first=True
         )
-        self.temporal_transformer_img = TransformerEncoder(encoder_layer_img, num_layers=2)
+        self.temporal_transformer_img = TransformerEncoder(encoder_layer_img, num_layers=self.encoder_layers)
 
         # -----------------------
         # LSTMs (num_layers=1, hidden_size = input_size)
