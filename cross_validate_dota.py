@@ -243,6 +243,7 @@ def train(train_dataloader, test_dataloader, fold):
             # print(f"Total FLOPs: {flops.total()}")            # only measure FLOPs for the first batch
             flops, params = profile(model, inputs=inputs)
             print(f"Total FLOPs: {flops}")            # only measure FLOPs for the first batch
+            print(f"Total Params: {params}") 
             if batch_i == 0:
                 with torch.no_grad():
                     with FlopTensorDispatchMode(model) as ftdm:
