@@ -238,8 +238,8 @@ def train(train_dataloader, test_dataloader, fold):
             inputs = (X, edge_index, img_feat, video_adj_list, edge_embeddings, 
                       temporal_adj_list, temporal_edge_w, batch_vec)          # match forward signature
             # flop_counter = FlopCounterMode(mods=model, display=False, depth=None)
-            flops = FlopCountAnalysis(model, inputs)
-            print(f"Total FLOPs: {flops.total()}")            # only measure FLOPs for the first batch
+            # flops = FlopCountAnalysis(model, inputs)
+            # print(f"Total FLOPs: {flops.total()}")            # only measure FLOPs for the first batch
             if batch_i == 0:
                 with torch.no_grad():
                     with FlopTensorDispatchMode(model) as ftdm:
