@@ -714,8 +714,8 @@ class Trans_LSTM(nn.Module):
         super(Trans_LSTM, self).__init__()
 
         self.num_heads = 4
-        self.graph_heads = 1
-        self.encoder_layers = 1
+        self.graph_heads = 4             # old setup - 4
+        self.encoder_layers = 2          # old setup - 2
         self.input_dim = input_dim
         self.embedding_dim = embedding_dim
 
