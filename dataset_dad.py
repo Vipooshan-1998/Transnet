@@ -70,11 +70,11 @@ class Dataset(Dataset):
 
         for line in lines:
             if training:
-				# feature_paths += [os.path.join(dataset_path, "training", line)]
-				feature_paths += [os.path.join(dataset_path, "training", line.split("_")[1].replace("'", ""))]
+                # feature_paths += [os.path.join(dataset_path, "training", line)]
+                feature_paths += [os.path.join(dataset_path, "training", line.split("_")[1].replace("'", ""))]
             else:
-				# feature_paths += [os.path.join(dataset_path, "testing", line)]
-				feature_paths += [os.path.join(dataset_path, "testing", line.split("_")[1].replace("'", ""))]
+                # feature_paths += [os.path.join(dataset_path, "testing", line)]
+                feature_paths += [os.path.join(dataset_path, "testing", line.split("_")[1].replace("'", ""))]
 
         return feature_paths
 
@@ -288,6 +288,7 @@ class Dataset(Dataset):
     def __len__(self):
         return len(self.feature_paths)
     
+
 
 
 
