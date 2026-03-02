@@ -48,7 +48,7 @@ class Dataset(Dataset):
         self.dilation_factor = 1
         self.topk = 10
         # self.frame_stats_path = dataset_path[:-8] + 'frames_stats'  # (height, width)
-        self.frame_stats_path = img_dataset_path[:-12] + 'frames_stats'  # (height, width)
+        self.frame_stats_path = img_dataset_path[:-13] + 'frames_stats'  # (height, width)
         self.n_frames = 50                  # 50   # 150
         # self.start_frame =  150 - 45        # 10   # 150 - 45
 
