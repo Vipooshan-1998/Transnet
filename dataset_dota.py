@@ -45,7 +45,8 @@ class Dataset(Dataset):
         self.temporal_ref = 1
         self.dilation_factor = 1
         self.topk = 10
-        self.frame_stats_path = dataset_path[:-8] + 'frames_stats'  # (height, width)
+        # self.frame_stats_path = dataset_path[:-8] + 'frames_stats'  # (height, width)
+        self.frame_stats_path = img_dataset_path[:-13] + 'frames_stats'  # (height, width)
         self.n_frames = 50
 
         # Obj label to word embeddings
