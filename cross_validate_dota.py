@@ -48,8 +48,8 @@ import random
 from collections import defaultdict
 import copy
 
-from fvcore.nn import FlopCountAnalysis
-from thop import profile
+# from fvcore.nn import FlopCountAnalysis
+# from thop import profile
 
 torch.manual_seed(0)  # 3407
 np.random.seed(0)
