@@ -326,7 +326,7 @@ class CrossValDataset(Dataset):
         self.toas_files_path = toas_files_path
         self.topk = 10
         # self.frame_stats_path = dataset_path[:-8] + 'frames_stats'  # (height, width)
-        self.frame_stats_path = img_dataset_path[:-13] + 'frames_stats'  # (height, width)
+        self.frame_stats_path = img_dataset_path[:-9] + '/frames_stats'  # (height, width)
         self.n_frames = n_frames
         self.ego_dist = ego_dist
 
