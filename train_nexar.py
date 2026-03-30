@@ -57,7 +57,7 @@ cls_criterion = nn.CrossEntropyLoss().to(device)
 best_ap = -1
 best_ap_mtta = -1
 n_frames = 50
-
+time_list = []
 
 def test_model(epoch, model, test_dataloader):
     """ Function to evaluate the model on the test data
@@ -104,7 +104,8 @@ def test_model(epoch, model, test_dataloader):
                                   temporal_edge_w, batch_vec)
             etime = time.time()
             duration = etime - stime
-            print("Test time: ", duration)
+            time_list.append(duration)
+            print("Test mean time: ", np.mean(time_list))
 
         pred_labels = probs.argmax(1)
 
