@@ -99,8 +99,12 @@ def test_model(epoch, model, test_dataloader):
         all_toa += [toa.item()]
 
         with torch.no_grad():
+            stime = time.time()
             logits, probs = model(X, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list,
                                   temporal_edge_w, batch_vec)
+            etime = time.time()
+            duration = etime - stime
+            print("Test time: ", duration)
 
         pred_labels = probs.argmax(1)
 
@@ -313,11 +317,11 @@ def main():
         _, ttc, _ = evaluation(all_probs_vid2.numpy(), all_y_vid.numpy(), all_toa, opt.fps)
 
         # Testing the model
-        stime = time.time()
+        # stime = time.time()
         test_model(epoch, model, test_dataloader)
-        etime = time.time()
-        duration = etime - stime
-        print("Test time: ", duration)
+        # etime = time.time()
+        # duration = etime - stime
+        # print("Test time: ", duration)
 
         scheduler.step()
 
