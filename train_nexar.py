@@ -313,7 +313,11 @@ def main():
         _, ttc, _ = evaluation(all_probs_vid2.numpy(), all_y_vid.numpy(), all_toa, opt.fps)
 
         # Testing the model
+        stime = time.time()
         test_model(epoch, model, test_dataloader)
+        etime = time.time()
+        duration = etime - stime
+        print("Test time: ", duration)
 
         scheduler.step()
 
