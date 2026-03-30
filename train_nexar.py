@@ -105,7 +105,6 @@ def test_model(epoch, model, test_dataloader):
             etime = time.time()
             duration = etime - stime
             time_list.append(duration)
-        print("Test mean time: ", np.mean(time_list))
 
         pred_labels = probs.argmax(1)
 
@@ -142,6 +141,8 @@ def test_model(epoch, model, test_dataloader):
     # Convert your lists/tensors to NumPy arrays
     file_names_array = np.array(file_names_list)       # shape: (num_videos,)
     probs_array = all_probs_vid2.numpy()               # shape: (num_videos, 1) or (num_videos,)
+
+    print("Test mean time: ", np.mean(time_list))
 
 
     if bool(opt.test_only):
