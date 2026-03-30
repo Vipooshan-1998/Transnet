@@ -105,7 +105,7 @@ def test_model(epoch, model, test_dataloader):
             etime = time.time()
             duration = etime - stime
             time_list.append(duration)
-            print("Test mean time: ", np.mean(time_list))
+        print("Test mean time: ", np.mean(time_list))
 
         pred_labels = probs.argmax(1)
 
