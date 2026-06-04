@@ -2554,3 +2554,125 @@ class SpaceTempGoG_detr_dota(nn.Module):
 #         probs_mc = self.softmax(logits_mc)
 
 #         return logits_mc, probs_mc
+
+
+
+## Ablation for MLWA Review
+import torch
+import torch.nn as nn
+from torch.nn import TransformerEncoder, TransformerEncoderLayer
+
+
+class Trans_LSTM_Sans_Object(nn.Module):
+    def __init__(
+        self,
+        embedding_dim=128,
+        img_feat_dim=2048,
+        num_classes=2
+    ):
+        super(Trans_LSTM, self).__init__()
+
+        self.num_heads = 4
+        self.encoder_layers = 2
+        self.embedding_dim = embedding_dim
+
+        # -----------------------
+        # I3D features -> Transformer
+        # -----------------------
+        self.img_fc = nn.Linear(img_feat_dim, embedding_dim * 2)
+
+        encoder_layer_img = TransformerEncoderLayer(
+            d_model=embedding_dim * 2,
+            nhead=self.num_heads,
+            batch_first=True
+        )
+        self.temporal_transformer_img = TransformerEncoder(
+            encoder_layer_img,
+            num_layers=self.encoder_layers
+        )
+
+        # -----------------------
+        # Temporal LSTM
+        # -----------------------
+        self.temporal_lstm_img = nn.LSTM(
+            input_size=embedding_dim * 2,
+            hidden_size=embedding_dim * 2,
+            num_layers=1,
+            batch_first=True
+        )
+
+        # -----------------------
+        # Classification
+        # -----------------------
+        concat_dim = embedding_dim * 2
+
+        self.classify_fc1 = nn.Linear(concat_dim, embedding_dim)
+        self.classify_fc2 = nn.Linear(embedding_dim, num_classes)
+
+        self.relu = nn.LeakyReLU(0.2)
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self, x, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec):
+
+        # -----------------------
+        # Helper function
+        # -----------------------
+        def sanitize(tensor, name):
+            if torch.isnan(tensor).any() or torch.isinf(tensor).any():
+                valid_mask = torch.isfinite(tensor)
+                if valid_mask.any():
+                    finite_min = tensor[valid_mask].min().item()
+                    finite_max = tensor[valid_mask].max().item()
+                    print(
+                        f"[⚠️ Sanitizing {name}] "
+                        f"finite_min={finite_min:.4f}, "
+                        f"finite_max={finite_max:.4f}"
+                    )
+                else:
+                    print(
+                        f"[⚠️ Sanitizing {name}] "
+                        f"all values are NaN or Inf!"
+                    )
+
+            tensor = torch.nan_to_num(
+                tensor,
+                nan=0.0,
+                posinf=1e3,
+                neginf=-1e3
+            )
+            tensor = torch.clamp(tensor, -1e3, 1e3)
+
+            return tensor
+
+        # -----------------------
+        # I3D feature processing
+        # -----------------------
+        img_feat_proj = self.img_fc(img_feat)
+        img_feat_proj = sanitize(img_feat_proj, "img_feat_proj")
+
+        img_feat_trans = self.temporal_transformer_img(
+            img_feat_proj,
+            is_causal=True
+        )
+        img_feat_trans = sanitize(img_feat_trans, "img_feat_trans")
+
+        img_feat_seq = img_feat_trans.unsqueeze(0)
+        img_feat_seq, _ = self.temporal_lstm_img(img_feat_seq)
+
+        lstm_out_img = img_feat_seq.squeeze(0)
+        lstm_out_img = sanitize(lstm_out_img, "lstm_out_img")
+
+        # -----------------------
+        # Classification
+        # -----------------------
+        fused_feat = sanitize(
+            lstm_out_img,
+            "fused_feat before classification"
+        )
+
+        fused_feat = self.relu(self.classify_fc1(fused_feat))
+
+        logits_mc = self.classify_fc2(fused_feat)
+        probs_mc = self.softmax(logits_mc)
+
+        return logits_mc, probs_mc
