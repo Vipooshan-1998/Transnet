@@ -2564,12 +2564,7 @@ from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 
 class Trans_LSTM_Sans_Object(nn.Module):
-    def __init__(
-        self,
-        embedding_dim=128,
-        img_feat_dim=2048,
-        num_classes=2
-    ):
+    def __init__(self, input_dim=2048, embedding_dim=128, img_feat_dim=2048, num_classes=2):
         super(Trans_LSTM, self).__init__()
 
         self.num_heads = 4
@@ -2612,7 +2607,8 @@ class Trans_LSTM_Sans_Object(nn.Module):
         self.relu = nn.LeakyReLU(0.2)
         self.softmax = nn.Softmax(dim=-1)
 
-    def forward(self, x, edge_index, img_feat, video_adj_list, edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec):
+    def forward(self, x, edge_index, img_feat, video_adj_list,                        # att_feat,
+                edge_embeddings, temporal_adj_list, temporal_edge_w, batch_vec):
 
         # -----------------------
         # Helper function
