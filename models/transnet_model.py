@@ -2565,7 +2565,7 @@ from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 class Trans_LSTM_Sans_Object(nn.Module):
     def __init__(self, input_dim=2048, embedding_dim=128, img_feat_dim=2048, num_classes=2):
-        super(Trans_LSTM, self).__init__()
+        super(Trans_LSTM_Sans_Object, self).__init__()
 
         self.num_heads = 4
         self.encoder_layers = 2
