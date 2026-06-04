@@ -3286,6 +3286,13 @@ class Trans_LSTM_Sans_Object_LSTM(nn.Module):
             num_layers=self.encoder_layers
         )
 
+        self.temporal_lstm_img = nn.LSTM(
+            input_size=embedding_dim * 2,
+            hidden_size=embedding_dim * 2,
+            num_layers=1,
+            batch_first=True
+        )
+
         # -----------------------
         # Classification
         # -----------------------
